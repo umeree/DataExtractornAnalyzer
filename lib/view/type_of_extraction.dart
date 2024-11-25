@@ -1,5 +1,6 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
+import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
 import 'package:dataextractor_analyzer/utils/media_query_util.dart';
 import 'package:flutter/material.dart';
 
@@ -32,16 +33,20 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           SizedBox(height: 10),
           Container(
             width: MediaQueryUtil.widthPercentage(context, 0.9),
-            height: MediaQueryUtil.heightPercentage(context, 0.4),
+            height: MediaQueryUtil.heightPercentage(context, 0.35),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: AppColors.primaryColor,
+              borderRadius: BorderRadius.circular(10), // Rounded corners for the border
+              color: AppColors.primaryColor,          // Background color for the container
+              border: Border.all(
+                color: Colors.black, // Border color
+                width: 1.0,          // Border width
+              ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10), // Ensures rounded corners match the container
               child: Image.network(
                 "https://via.placeholder.com/150/FF0000",
-                fit: BoxFit.cover,
+                fit: BoxFit.cover, // Image scaling to cover the container
               ),
             ),
           ),
@@ -74,6 +79,16 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
               });
             },
           ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomButton(text: "Analyze", onPressed: (){}),
+              const SizedBox(width: 15,),
+              CustomButton(text: "Cancel", onPressed: (){}),
+            ],
+          ),
+          const SizedBox(height: 30,)
         ],
       ),
     );
@@ -88,37 +103,40 @@ Widget _buildExtractionTile(
       required String groupValue,
       required ValueChanged<String?> onChanged, // Accept nullable String
     }) {
-  return Container(
-    padding: EdgeInsets.all(10),
-    width: MediaQueryUtil.widthPercentage(context, 0.9),
-    height: 100,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(width: 1, color: AppColors.primaryColor),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              titleText,
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-            Radio<String>(
-              value: radioButtonValue,
-              groupValue: groupValue,
-              onChanged: onChanged, // Pass the callback
-            ),
-          ],
-        ),
-        Text(
-          labelText,
-          style: TextStyle(fontSize: 12, color: AppColors.textColor),
-        ),
-      ],
+  return Padding(
+    padding: const EdgeInsets.only(top: 3, bottom: 3),
+    child: Container(
+      padding: EdgeInsets.all(5),
+      width: MediaQueryUtil.widthPercentage(context, 0.9),
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(width: 1, color: AppColors.primaryColor),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                titleText,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Radio<String>(
+                value: radioButtonValue,
+                groupValue: groupValue,
+                onChanged: onChanged, // Pass the callback
+              ),
+            ],
+          ),
+          Text(
+            labelText,
+            style: TextStyle(fontSize: 12, color: AppColors.textColor),
+          ),
+        ],
+      ),
     ),
   );
 }
