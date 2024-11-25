@@ -1,5 +1,7 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
+import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/home_buttons.dart';
+import 'package:dataextractor_analyzer/view/type_of_extraction.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -36,26 +38,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Data Extractor & Analyzer",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+      appBar:  const CustomAppBar(action: true,),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Text(
+                "Data Extractor & Analyzer",
+                style: Theme.of(context).textTheme.displayLarge,
+              ),
+            ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildHomeButton(
-                  context,
-                  icon: Icons.camera_enhance_rounded,
-                  label: "Capture Image",
+                GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
+                  },
+                  child: _buildHomeButton(
+                    context,
+                    icon: Icons.camera_enhance_rounded,
+                    label: "Capture Image",
+                  ),
                 ),
                 _buildHomeButton(
                   context,
@@ -67,14 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             Row(
               children: [
-                const SizedBox(width: 15),
+                const SizedBox(width: 5),
                 Text(
                   "Recent Files",
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             // Container to display the grid
             Expanded(
               child: Container(
@@ -83,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: containerHeight, // Dynamically calculated height
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(width: 1, color: AppColors.primaryColor),
+                  border: Border.all(width: 1,),
                 ),
                 child: GridView.builder(
                   // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
@@ -106,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 5,)
+            SizedBox(height: 20,)
           ],
         ),
       ),
