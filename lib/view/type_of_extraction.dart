@@ -2,6 +2,8 @@ import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
 import 'package:dataextractor_analyzer/utils/media_query_util.dart';
+import 'package:dataextractor_analyzer/view/extraction_result.dart';
+import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:flutter/material.dart';
 
 class TypeOfExtraction extends StatefulWidget {
@@ -17,7 +19,13 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(),
+      appBar: CustomAppBar(onLeadingPressed: (){
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+              (route) => false, // Predicate: Remove all previous routes
+        );
+      },),
       body: Column(
         children: [
           Center(
@@ -32,7 +40,7 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           ),
           SizedBox(height: 10),
           Container(
-            width: MediaQueryUtil.widthPercentage(context, 0.9),
+            width: MediaQueryUtil.widthPercentage(context, 0.85),
             height: MediaQueryUtil.heightPercentage(context, 0.35),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10), // Rounded corners for the border
@@ -83,7 +91,9 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CustomButton(text: "Analyze", onPressed: (){}),
+              CustomButton(text: "Analyze", onPressed: (){
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ExtractionResult()));
+              }),
               const SizedBox(width: 15,),
               CustomButton(text: "Cancel", onPressed: (){}),
             ],
@@ -107,7 +117,7 @@ Widget _buildExtractionTile(
     padding: const EdgeInsets.only(top: 3, bottom: 3),
     child: Container(
       padding: EdgeInsets.all(5),
-      width: MediaQueryUtil.widthPercentage(context, 0.9),
+      width: MediaQueryUtil.widthPercentage(context, 0.85),
       height: 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
