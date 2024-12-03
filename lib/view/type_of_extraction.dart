@@ -78,16 +78,16 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           ),
           _buildExtractionTile(
             context,
-            titleText: "Image Analysis",
-            labelText: "Analyze the content of the image.",
-            radioButtonValue: "Image Analysis",
+            titleText: "Table Extraction",
+            labelText: "It will extract tables from your image.",
+            radioButtonValue: "Table Extraction",
             groupValue: _selectedOption!,
             onChanged: (val) {
               setState(() {
                 _selectedOption = val;
               });
             },
-            isSelected: _selectedOption == 'Image Analysis',
+            isSelected: _selectedOption == 'Table Extraction',
           ),
           const Spacer(),
           Row(
