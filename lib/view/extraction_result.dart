@@ -17,6 +17,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
   @override
   Widget build(BuildContext context) {
+    bool readOnly = true;
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: CustomAppBar(onLeadingPressed: (){
@@ -46,7 +47,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
               // controller: _textController,
               initialValue: "This is a multi-line TextFormField. It is non-editable, has a background color, and scrolls if the text goes beyond 5–6 lines.",
               maxLines: 8, 
-              readOnly: true,
+              readOnly: readOnly,
               decoration: InputDecoration(
                 filled: true, // Enables background color
                 fillColor: Colors.grey[200], // Background color
@@ -66,7 +67,11 @@ class _ExtractionResultState extends State<ExtractionResult> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                CustomButton(text: "Edit", onPressed: (){}),
+                CustomButton(text: "Edit", onPressed: (){
+                  setState(() {
+                    readOnly = false;
+                  });
+                }),
                 SizedBox(width: 5,),
                 CustomButton(text: "Export", onPressed: (){}),
               ],
@@ -75,7 +80,9 @@ class _ExtractionResultState extends State<ExtractionResult> {
            Row(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
-               CustomButton(text: "Back", onPressed: (){}),
+               CustomButton(text: "Back", onPressed: (){
+                 Navigator.pop(context);
+               }),
                SizedBox(width: 15,),
                CustomButton(text: "Save", onPressed: (){}),
              ],

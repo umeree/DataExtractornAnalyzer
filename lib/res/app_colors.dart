@@ -6,5 +6,6 @@ class AppColors {
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color textColor = Color(0xFF333333);
   static const Color edgesStrokesColor = Color(0xFF708090);
+  static const Color borderColor = Color(0xFF31A1FF);
 
 }

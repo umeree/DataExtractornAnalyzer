@@ -22,7 +22,7 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
       appBar: CustomAppBar(onLeadingPressed: (){
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
               (route) => false, // Predicate: Remove all previous routes
         );
       },),
@@ -74,6 +74,7 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
                 _selectedOption = val;
               });
             },
+            isSelected: _selectedOption == 'Text Extraction',
           ),
           _buildExtractionTile(
             context,
@@ -86,6 +87,7 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
                 _selectedOption = val;
               });
             },
+            isSelected: _selectedOption == 'Image Analysis',
           ),
           const Spacer(),
           Row(
@@ -112,16 +114,21 @@ Widget _buildExtractionTile(
       required String radioButtonValue,
       required String groupValue,
       required ValueChanged<String?> onChanged, // Accept nullable String
+      required bool isSelected, // Add a parameter to indicate selection
     }) {
   return Padding(
     padding: const EdgeInsets.only(top: 3, bottom: 3),
     child: Container(
       padding: EdgeInsets.all(5),
-      width: MediaQueryUtil.widthPercentage(context, 0.85),
+      width: MediaQuery.of(context).size.width * 0.85,
       height: 80,
       decoration: BoxDecoration(
+        color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : AppColors.backgroundColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(width: 1, color: AppColors.primaryColor),
+        border: Border.all(
+          width: 2,
+          color: isSelected ? AppColors.borderColor : AppColors.primaryColor,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -138,7 +145,26 @@ Widget _buildExtractionTile(
                 value: radioButtonValue,
                 groupValue: groupValue,
                 onChanged: onChanged, // Pass the callback
+                fillColor: MaterialStateProperty.resolveWith<Color>(
+                      (states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return AppColors.primaryColor; // Color when selected
+                    }
+                    return AppColors.primaryColor.withOpacity(0.6); // Color when unselected
+                  },
+                ),
+                overlayColor: MaterialStateProperty.resolveWith<Color>(
+                      (states) {
+                    if (states.contains(MaterialState.hovered)) {
+                      return AppColors.primaryColor.withOpacity(0.1); // Hover color
+                    }
+                    return Colors.transparent;
+                  },
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
               ),
+
             ],
           ),
           Text(
@@ -150,3 +176,4 @@ Widget _buildExtractionTile(
     ),
   );
 }
+
