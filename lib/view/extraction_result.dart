@@ -1,6 +1,7 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
+import 'package:dataextractor_analyzer/utils/media_query_util.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:flutter/material.dart';
 
@@ -67,13 +68,33 @@ class _ExtractionResultState extends State<ExtractionResult> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                CustomButton(text: "Edit", onPressed: (){
+                CustomButton(text: "Edit",
+                    onPressed: (
+                    ){
                   setState(() {
                     readOnly = false;
                   });
                 }),
                 SizedBox(width: 5,),
-                CustomButton(text: "Export", onPressed: (){}),
+                CustomButton(text: "Export", onPressed: (){
+                  showModalBottomSheet
+                    (
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(10),
+                        ),
+                      ),
+                      context: context,
+                      builder: (context) {
+                        return Container(
+                          height: MediaQueryUtil.screenHeight(context) * 0.35,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(topLeft: Radius.circular(2), topRight:Radius.circular(2) )
+                          ),
+                        );
+                  }
+                  );
+                }),
               ],
             ),
             Spacer(),
