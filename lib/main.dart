@@ -1,10 +1,17 @@
 import 'dart:ui';
 
+import 'package:dataextractor_analyzer/utils/providers/provider.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+        providers: providers,
+        child: const MyApp(),
+    )
+  );
 }
 
 class MyApp extends StatelessWidget {
