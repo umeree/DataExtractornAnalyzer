@@ -8,4 +8,6 @@ class AppColors {
   static const Color edgesStrokesColor = Color(0xFF708090);
   static const Color borderColor = Color(0xFF31A1FF);
 
+  static const Color greyColor = Color(0xFFCCCACA);
+
 }

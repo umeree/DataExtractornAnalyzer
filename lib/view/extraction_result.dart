@@ -1,6 +1,7 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
+import 'package:dataextractor_analyzer/utils/components/document-tile.dart';
 import 'package:dataextractor_analyzer/utils/media_query_util.dart';
 import 'package:dataextractor_analyzer/view-model/edit-text-view-model.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
@@ -87,9 +88,17 @@ class _ExtractionResultState extends State<ExtractionResult> {
                         context: context,
                         builder: (context) {
                           return Container(
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                             height: MediaQueryUtil.screenHeight(context) * 0.35,
                             decoration: BoxDecoration(
                                 borderRadius: BorderRadius.only(topLeft: Radius.circular(2), topRight:Radius.circular(2) )
+                            ),
+                            child: Center(
+                              child: ListView.builder(
+                                  itemCount: 4,
+                                  itemBuilder: (context, value) {
+                                    return DocumentTile(icon: Icons.book_online_rounded, text: "Excel Document",);
+                                  }),
                             ),
                           );
                         }
@@ -116,3 +125,4 @@ class _ExtractionResultState extends State<ExtractionResult> {
     );
   }
 }
+
