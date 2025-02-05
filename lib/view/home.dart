@@ -1,9 +1,14 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/home_buttons.dart';
 import 'package:dataextractor_analyzer/view/type_of_extraction.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final int crossAxisCount = 2; // Number of items per row
   final double itemHeight = 120; // Fixed height of each grid item
   final double spacing = 4; // Spacing between grid items
+  File? _imageFile;
+  int? _imageWidth;
+  int? _imageHeight;
   final List<String> imageUrls = [
     'https://via.placeholder.com/150',
     'https://via.placeholder.com/150/0000FF',
@@ -27,6 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://via.placeholder.com/150/00FFFF',
     'https://via.placeholder.com/150/CCCCCC',
   ];
+
+  Future<void> pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 26
+    );
+
+    if(pickedFile != null) {
+      final file = File(pickedFile.path);
+      final bytes = await file.readAsBytes();
+      final image = img.decodeImage(Uint8List.fromList(bytes));
+
+      setState(() {
+        _imageFile = file;
+        _imageWidth = image?.width;
+        _imageHeight = image?.height;
+      });
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
+                    pickImage(ImageSource.camera);
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
                   },
                   child: _buildHomeButton(
                     context,
