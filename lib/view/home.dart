@@ -88,8 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 GestureDetector(
                   onTap: (){
-                    pickImage(ImageSource.camera);
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
+                    pickImage(ImageSource.camera).then((val) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
+                    });
                   },
                   child: _buildHomeButton(
                     context,
@@ -152,7 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
   // Helper method to build reusable Home Button widgets
   Widget _buildHomeButton(BuildContext context,
       {required IconData icon, required String label}) {
