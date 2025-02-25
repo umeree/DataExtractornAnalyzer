@@ -166,22 +166,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 5),
             // Container to display the grid
-            _imagesPaths.length == 0 || _imagesPaths.isEmpty
-                ? Center(
-                    child: Text("No Recent Files"),
-                  )
-                : Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      width: MediaQuery.of(context).size.width,
-                      height: containerHeight, // Dynamically calculated height
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          width: 1,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                width: MediaQuery.of(context).size.width,
+                height: containerHeight,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    width: 1,
+                  ),
+                ),
+                child: _imagesPaths.length == 0 || _imagesPaths.isEmpty
+                    ? Center(
+                        child: Text(
+                          "No Recent Files",
+                          style: TextStyle(
+                              fontSize: 16, color: AppColors.greyColor),
                         ),
-                      ),
-                      child: GridView.builder(
+                      )
+                    : GridView.builder(
                         // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
@@ -200,8 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
-                    ),
-                  ),
+              ),
+            ),
+            // Spacer(),
             SizedBox(
               height: 20,
             )
