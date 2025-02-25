@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dataextractor_analyzer/db_helper/database_helper.dart';
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/home_buttons.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final int itemCount = 10; // Total number of grid items
+  // final int itemCount = 10; // Total number of grid items
   final int crossAxisCount = 2; // Number of items per row
   final double itemHeight = 120; // Fixed height of each grid item
   final double spacing = 4; // Spacing between grid items
@@ -37,22 +39,53 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://via.placeholder.com/150/CCCCCC',
   ];
 
+  List<String> _imagesPaths = [];
+
   Future<void> pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-        source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 26);
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+          source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 26);
 
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      final bytes = await file.readAsBytes();
-      final image = img.decodeImage(Uint8List.fromList(bytes));
+      if (pickedFile != null) {
+        final Directory appDir = await getApplicationDocumentsDirectory();
+        final String fileName = pickedFile.name;
+        final File localImage =
+            await File(pickedFile.path).copy('${appDir.path}/$fileName');
+        await DatabaseHelper.instance.insertImage(localImage.path);
+        final file = File(pickedFile.path);
+        final bytes = await file.readAsBytes();
+        final image = img.decodeImage(Uint8List.fromList(bytes));
 
-      setState(() {
-        _imageFile = file;
-        _imageWidth = image?.width;
-        _imageHeight = image?.height;
-      });
+        final images = await DatabaseHelper.instance.getImages();
+
+        setState(() {
+          _imageFile = file;
+          _imageWidth = image?.width;
+          _imageHeight = image?.height;
+          _imagesPaths = images;
+        });
+      }
+    } catch (e) {
+      debugPrint(e.toString());
     }
+  }
+
+  Future<void> _loadImages() async {
+    final images = await DatabaseHelper.instance.getImages();
+    setState(() {
+      _imagesPaths = images;
+    });
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _loadImages();
+    setState(() {
+      _imageFile == null;
+    });
   }
 
   @override
@@ -133,38 +166,42 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 5),
             // Container to display the grid
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                width: MediaQuery.of(context).size.width,
-                height: containerHeight, // Dynamically calculated height
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    width: 1,
-                  ),
-                ),
-                child: GridView.builder(
-                  // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    childAspectRatio: 1.5,
-                  ),
-                  itemCount: itemCount,
-                  itemBuilder: (context, index) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        imageUrls[index % imageUrls.length],
-                        fit: BoxFit.cover,
+            _imagesPaths.length == 0 || _imagesPaths.isEmpty
+                ? Center(
+                    child: Text("No Recent Files"),
+                  )
+                : Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      width: MediaQuery.of(context).size.width,
+                      height: containerHeight, // Dynamically calculated height
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          width: 1,
+                        ),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
+                      child: GridView.builder(
+                        // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: spacing,
+                          mainAxisSpacing: spacing,
+                          childAspectRatio: 1.5,
+                        ),
+                        itemCount: _imagesPaths.length,
+                        itemBuilder: (context, index) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(_imagesPaths[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
             SizedBox(
               height: 20,
             )
