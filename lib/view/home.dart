@@ -7,6 +7,7 @@ import 'package:dataextractor_analyzer/utils/components/home_buttons.dart';
 import 'package:dataextractor_analyzer/view/type_of_extraction.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 
@@ -39,13 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
-      source: source,
-      maxWidth: 1200,
-      maxHeight: 1200,
-      imageQuality: 26
-    );
+        source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 26);
 
-    if(pickedFile != null) {
+    if (pickedFile != null) {
       final file = File(pickedFile.path);
       final bytes = await file.readAsBytes();
       final image = img.decodeImage(Uint8List.fromList(bytes));
@@ -55,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _imageWidth = image?.width;
         _imageHeight = image?.height;
       });
-
     }
   }
 
@@ -69,8 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar:  const CustomAppBar(action: true,),
-
+      appBar: const CustomAppBar(
+        action: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -87,9 +84,15 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 GestureDetector(
-                  onTap: (){
+                  onTap: () {
                     pickImage(ImageSource.camera).then((val) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) =>const TypeOfExtraction()));
+                      if (_imageFile == null) return;
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => TypeOfExtraction(
+                                    imageFile: _imageFile!,
+                                  )));
                     });
                   },
                   child: _buildHomeButton(
@@ -98,10 +101,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: "Capture Image",
                   ),
                 ),
-                _buildHomeButton(
-                  context,
-                  icon: Icons.cloud_upload_rounded,
-                  label: "Upload Image",
+                GestureDetector(
+                  onTap: () {
+                    pickImage(ImageSource.gallery).then((val) {
+                      if (_imageFile == null) return;
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => TypeOfExtraction(
+                                    imageFile: _imageFile!,
+                                  )));
+                    });
+                  },
+                  child: _buildHomeButton(
+                    context,
+                    icon: Icons.cloud_upload_rounded,
+                    label: "Upload Image",
+                  ),
                 ),
               ],
             ),
@@ -124,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: containerHeight, // Dynamically calculated height
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(width: 1,),
+                  border: Border.all(
+                    width: 1,
+                  ),
                 ),
                 child: GridView.builder(
                   // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
@@ -147,12 +165,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 20,)
+            SizedBox(
+              height: 20,
+            )
           ],
         ),
       ),
     );
   }
+
   // Helper method to build reusable Home Button widgets
   Widget _buildHomeButton(BuildContext context,
       {required IconData icon, required String label}) {

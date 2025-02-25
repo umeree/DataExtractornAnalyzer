@@ -9,14 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ExtractionResult extends StatefulWidget {
-  const ExtractionResult({super.key});
+  String initialValue;
+  ExtractionResult({super.key, required this.initialValue});
 
   @override
   State<ExtractionResult> createState() => _ExtractionResultState();
 }
 
 class _ExtractionResultState extends State<ExtractionResult> {
-
   TextEditingController _textController = TextEditingController();
 
   @override
@@ -24,14 +24,15 @@ class _ExtractionResultState extends State<ExtractionResult> {
     bool readOnly = true;
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: CustomAppBar(onLeadingPressed: (){
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-              (route) => false, // Predicate: Remove all previous routes
-        );
-
-      },),
+      appBar: CustomAppBar(
+        onLeadingPressed: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+            (route) => false, // Predicate: Remove all previous routes
+          );
+        },
+      ),
       body: Consumer<EditTextViewModel>(builder: (context, value, child) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -46,11 +47,13 @@ class _ExtractionResultState extends State<ExtractionResult> {
                   style: Theme.of(context).textTheme.displayLarge,
                 ),
               ),
-
-              Text("Text", style: Theme.of(context).textTheme.headlineMedium,),
+              Text(
+                "Text",
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               TextFormField(
                 // controller: _textController,
-                initialValue: "This is a multi-line TextFormField. It is non-editable, has a background color, and scrolls if the text goes beyond 5–6 lines.",
+                initialValue: widget.initialValue,
                 maxLines: 8,
                 readOnly: value.readOnly,
                 decoration: InputDecoration(
@@ -58,66 +61,85 @@ class _ExtractionResultState extends State<ExtractionResult> {
                   fillColor: Colors.grey[200], // Background color
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10), // Rounded corners
-                    borderSide:  const BorderSide(
+                    borderSide: const BorderSide(
                       color: Colors.grey, // Border color
                       width: 1.0, // Border width
                     ),
                   ),
-                  contentPadding: EdgeInsets.all(12), // Padding inside the field
+                  contentPadding:
+                      EdgeInsets.all(12), // Padding inside the field
                 ),
-                style: TextStyle(fontSize: 16, color: Colors.black), // Text styling
+                style: TextStyle(
+                    fontSize: 16, color: Colors.black), // Text styling
                 keyboardType: TextInputType.multiline, // Multi-line text input
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  CustomButton(text: "Edit",
-                      onPressed: (){
-                    value.setReadOnly(false);
+                  CustomButton(
+                      text: "Edit",
+                      onPressed: () {
+                        value.setReadOnly(false);
                       }),
-                  SizedBox(width: 5,),
-                  CustomButton(text: "Export", onPressed: (){
-                    showModalBottomSheet
-                      (
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(10),
-                          ),
-                        ),
-                        context: context,
-                        builder: (context) {
-                          return Container(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                            height: MediaQueryUtil.screenHeight(context) * 0.35,
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.only(topLeft: Radius.circular(2), topRight:Radius.circular(2) )
+                  SizedBox(
+                    width: 5,
+                  ),
+                  CustomButton(
+                      text: "Export",
+                      onPressed: () {
+                        showModalBottomSheet(
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(10),
+                              ),
                             ),
-                            child: Center(
-                              child: ListView.builder(
-                                  itemCount: 4,
-                                  itemBuilder: (context, value) {
-                                    return DocumentTile(icon: Icons.book_online_rounded, text: "Excel Document",);
-                                  }),
-                            ),
-                          );
-                        }
-                    );
-                  }),
+                            context: context,
+                            builder: (context) {
+                              return Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 20),
+                                height:
+                                    MediaQueryUtil.screenHeight(context) * 0.35,
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(2),
+                                        topRight: Radius.circular(2))),
+                                child: Center(
+                                  child: ListView.builder(
+                                      itemCount: 4,
+                                      itemBuilder: (context, value) {
+                                        return DocumentTile(
+                                          icon: Icons.book_online_rounded,
+                                          text: "Excel Document",
+                                        );
+                                      }),
+                                ),
+                              );
+                            });
+                      }),
                 ],
               ),
               Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomButton(text: "Back", onPressed: (){
-                    Navigator.pop(context);
-                  }),
-                  SizedBox(width: 15,),
-                  CustomButton(text: "Save", onPressed: (){}),
+                  CustomButton(
+                      text: "Back",
+                      onPressed: () {
+                        Navigator.pop(context);
+                      }),
+                  SizedBox(
+                    width: 15,
+                  ),
+                  CustomButton(text: "Save", onPressed: () {}),
                 ],
               ),
-              SizedBox(height: 30,)
+              SizedBox(
+                height: 30,
+              )
             ],
           ),
         );
@@ -125,4 +147,3 @@ class _ExtractionResultState extends State<ExtractionResult> {
     );
   }
 }
-

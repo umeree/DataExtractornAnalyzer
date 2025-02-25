@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
@@ -5,9 +7,11 @@ import 'package:dataextractor_analyzer/utils/media_query_util.dart';
 import 'package:dataextractor_analyzer/view/extraction_result.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class TypeOfExtraction extends StatefulWidget {
-  const TypeOfExtraction({super.key});
+  File imageFile;
+  TypeOfExtraction({super.key, required this.imageFile});
 
   @override
   State<TypeOfExtraction> createState() => _TypeOfExtractionState();
@@ -15,6 +19,30 @@ class TypeOfExtraction extends StatefulWidget {
 
 class _TypeOfExtractionState extends State<TypeOfExtraction> {
   String? _selectedOption = "Text Extraction"; // Default value
+    String _extractedText = '';
+
+
+    Future<void> _extractText() async {
+    if (widget.imageFile == null) return;
+
+    final inputImage = InputImage.fromFile(widget.imageFile);
+    final textRecognizer = TextRecognizer();
+
+    try {
+      final RecognizedText recognizedText =
+          await textRecognizer.processImage(inputImage);
+      setState(() {
+        _extractedText = recognizedText.text;
+        // Navigator.push(context, MaterialPageRoute(builder: (context) => Home(extractedText: _extractedText)));
+      });
+    } catch (e) {
+      setState(() {
+        _extractedText = 'Error: $e';
+      });
+    } finally {
+      textRecognizer.close();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +80,7 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10), // Ensures rounded corners match the container
-              child: Image.network(
-                "https://via.placeholder.com/150/FF0000",
-                fit: BoxFit.cover, // Image scaling to cover the container
-              ),
+              child: Image.file(widget.imageFile, fit: BoxFit.cover,),
             ),
           ),
           SizedBox(height: 20),
@@ -93,8 +118,10 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CustomButton(text: "Analyze", onPressed: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ExtractionResult()));
+              CustomButton(text: "Analyze", onPressed: () async{
+               await  _extractText().then((val) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ExtractionResult(initialValue: _extractedText,)));
+               });
               }),
               const SizedBox(width: 15,),
               CustomButton(text: "Cancel", onPressed: (){}),
