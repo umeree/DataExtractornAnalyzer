@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/cutom_button.dart';
@@ -6,7 +8,10 @@ import 'package:dataextractor_analyzer/utils/media_query_util.dart';
 import 'package:dataextractor_analyzer/view-model/edit-text-view-model.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 class ExtractionResult extends StatefulWidget {
   String initialValue;
@@ -19,6 +24,70 @@ class ExtractionResult extends StatefulWidget {
 class _ExtractionResultState extends State<ExtractionResult> {
   TextEditingController _textController = TextEditingController();
 
+
+
+
+  Future<void> generatePDF() async {
+
+    // Request storage permission
+    var status = await Permission.storage.request();
+    if (!status.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Storage permission denied")),
+      );
+      return;
+    }
+
+    // Create the PDF document
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(build: (pw.Context context) {
+        return pw.Center(
+          child: pw.Text(_textController.text, style: pw.TextStyle(fontSize: 20)),
+        );
+      }),
+    );
+
+    // Get Downloads directory
+    final directory = Directory('/storage/emulated/0/Download');
+    final path = '${directory.path}/GeneratedPDF-${DateTime.now().microsecondsSinceEpoch}.pdf';
+    final file = File(path);
+
+    // Write the PDF to the file
+    await file.writeAsBytes(await pdf.save());
+
+    // Notify media scanner
+    try {
+      const platform = MethodChannel('flutter/media_scanner');
+      await platform.invokeMethod('scanFile', {'path': path});
+    } catch (e) {
+      print("Error notifying media scanner: $e");
+    }
+
+    // Show success dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("PDF Generated"),
+        content: Text("PDF saved to Downloads: $path"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _textController.text = widget.initialValue;
+  }
   @override
   Widget build(BuildContext context) {
     bool readOnly = true;
@@ -52,7 +121,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               TextFormField(
-                // controller: _textController,
+                controller: _textController,
                 initialValue: widget.initialValue,
                 maxLines: 8,
                 readOnly: value.readOnly,
@@ -109,11 +178,12 @@ class _ExtractionResultState extends State<ExtractionResult> {
                                         topRight: Radius.circular(2))),
                                 child: Center(
                                   child: ListView.builder(
-                                      itemCount: 4,
+                                      itemCount: 1,
                                       itemBuilder: (context, value) {
                                         return DocumentTile(
-                                          icon: Icons.book_online_rounded,
-                                          text: "Excel Document",
+                                          icon: Icons.picture_as_pdf,
+                                          color: AppColors.redColor,
+                                          text: "PDF Document",
                                         );
                                       }),
                                 ),

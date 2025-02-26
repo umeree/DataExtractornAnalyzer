@@ -42,6 +42,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.14.0
   path_provider: ^2.1.5
   sqflite: ^2.4.1
+  pdf: ^3.11.3
+  permission_handler: ^11.4.0
 
 dev_dependencies:
   flutter_test:

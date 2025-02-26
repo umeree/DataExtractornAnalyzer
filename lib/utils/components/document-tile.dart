@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class DocumentTile extends StatelessWidget {
   final IconData icon;
   final String text;
+  Color color;
 
-  const DocumentTile({
+ DocumentTile({
     Key? key,
     required this.icon,
     required this.text,
+    this.color = AppColors.greyColor,
   }) : super(key: key);
 
   @override
@@ -19,7 +21,7 @@ class DocumentTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.greyColor, size: 40,),
+              Icon(icon, color: color, size: 40,),
               const SizedBox(width: 5),
               Text(
                 text,
