@@ -19,7 +19,7 @@ class TypeOfExtraction extends StatefulWidget {
 
 class _TypeOfExtractionState extends State<TypeOfExtraction> {
   String? _selectedOption = "Text Extraction"; // Default value
-    String _extractedText = '';
+    String? _extractedText ;
 
 
     Future<void> _extractText() async {
@@ -119,9 +119,23 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CustomButton(text: "Analyze", onPressed: () async{
-               await  _extractText().then((val) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ExtractionResult(initialValue: _extractedText,)));
-               });
+               await  _extractText();
+               if (_extractedText!.isNotEmpty || _extractedText != null) {
+                 print("Here is extracted text ${_extractedText}");
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(
+                     builder: (context) => ExtractionResult(
+                       initialValue: _extractedText,
+                     ),
+                   ),
+                 );
+               } else {
+                 // Show an error message if extraction failed
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(content: Text('Failed to extract text. Please try again.')),
+                 );
+               }
               }),
               const SizedBox(width: 15,),
               CustomButton(text: "Cancel", onPressed: (){}),
