@@ -1,0 +1,2 @@
+C:/Users/Umer/StudioProjects/dataextractor_analyzer/android/app/.cxx/Debug/403o3l2o/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Umer/StudioProjects/dataextractor_analyzer/android/app/.cxx/Debug/403o3l2o/x86_64/CMakeFiles/rebuild_cache.dir

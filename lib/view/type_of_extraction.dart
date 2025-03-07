@@ -18,7 +18,7 @@ class TypeOfExtraction extends StatefulWidget {
 }
 
 class _TypeOfExtractionState extends State<TypeOfExtraction> {
-  String? _selectedOption = "Text Extraction"; // Default value
+  String? _selectedOption = "Text Extraction";
     String _extractedText = '';
 
 
@@ -124,7 +124,9 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
                });
               }),
               const SizedBox(width: 15,),
-              CustomButton(text: "Cancel", onPressed: (){}),
+              CustomButton(text: "Cancel", onPressed: (){
+                Navigator.pop(context);
+              }),
             ],
           ),
           const SizedBox(height: 30,)
