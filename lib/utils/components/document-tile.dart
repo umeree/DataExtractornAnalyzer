@@ -7,6 +7,8 @@ class DocumentTile extends StatelessWidget {
   Color color;
   VoidCallback onPress;
 
+
+
  DocumentTile({
     Key? key,
     required this.icon,
@@ -18,7 +20,9 @@ class DocumentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+
       onTap: onPress,
+
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
         child: Column(
