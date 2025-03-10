@@ -1,14 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<<<<<<< HEAD
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-=======
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
->>>>>>> f86e9597c2ac1f0db352d5dbf051e9186514e285
     <application
         android:label="dataextractor_analyzer"
         android:name="${applicationName}"

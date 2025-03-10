@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -40,7 +41,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
     return pw.Font.ttf(fontData);
   }
 
-  Future<void> _generateAndSavePDF() async {
+  Future<void> _generateAndSavePDF(String longText) async {
     try {
       // Request storage permission
       var status = await Permission.storage.request();
@@ -55,24 +56,36 @@ class _ExtractionResultState extends State<ExtractionResult> {
       final robotoFont = await loadRobotoFont();
 
       pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) => pw.Text(
-            _textController.text,
-            style: pw.TextStyle(font: robotoFont, fontSize: 16),
-          ),
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.all(20),
+          build: (pw.Context context) {
+            return [
+              pw.Text(
+                "Generated PDF",
+                style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, font: robotoFont,),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                longText,
+                style: pw.TextStyle(font: robotoFont, fontSize: _fontSize),
+                textAlign: pw.TextAlign.justify,
+              ),
+            ];
+          },
         ),
       );
 
       // Save PDF in Downloads folder
       Directory? directory;
       if (Platform.isAndroid) {
-        directory = Directory('/storage/emulated/0/Download'); // Set Downloads folder
+        directory = Directory('/storage/emulated/0/Download'); // Downloads folder
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
 
       String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final pdfPath = "${directory.path}/extraction_result_$timestamp.pdf";
+      final pdfPath = "${directory.path}/multi_page_pdf_$timestamp.pdf";
       final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
 
@@ -80,6 +93,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
         SnackBar(content: Text("PDF saved successfully in Downloads: $pdfPath")),
       );
     } catch (e) {
+      print(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error generating PDF: $e")),
       );
@@ -207,14 +221,13 @@ class _ExtractionResultState extends State<ExtractionResult> {
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                               height: MediaQueryUtil.screenHeight(context) * 0.35,
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: _generateAndSavePDF,
-                                  child: DocumentTile(
-                                    icon: Icons.picture_as_pdf,
-                                    color: AppColors.redColor,
-                                    text: "PDF Document",
-                                    onPress: _generateAndSavePDF,
-                                  ),
+                                child: DocumentTile(
+                                  icon: Icons.picture_as_pdf,
+                                  color: AppColors.redColor,
+                                  text: "PDF Document",
+                                  onPress: (){
+                                    _generateAndSavePDF(_textController.text);
+                                  },
                                 ),
                               ),
                             );
