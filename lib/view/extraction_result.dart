@@ -88,7 +88,9 @@ class _ExtractionResultState extends State<ExtractionResult> {
       final pdfPath = "${directory.path}/multi_page_pdf_$timestamp.pdf";
       final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
-
+      // if (kDebugMode) {
+      //   print("PDF saved successfully in Downloads: $pdfPath");
+      // }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("PDF saved successfully in Downloads: $pdfPath")),
       );

@@ -17,15 +17,36 @@ class TypeOfExtraction extends StatefulWidget {
   State<TypeOfExtraction> createState() => _TypeOfExtractionState();
 }
 
-class _TypeOfExtractionState extends State<TypeOfExtraction> {
+class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerProviderStateMixin{
 
   String? _selectedOption = "Text Extraction";
     String _extractedText = '';
+    bool _isFullScreenImage = false;
+    late AnimationController _animationController;
+    late Animation<double> _fadeAnimation;
 
-  // String? _selectedOption = "Text Extraction"; // Default value
-  //   String? _extractedText ;
 
+  @override
+  void initState() {
+    super.initState();
 
+    // Animation controller for fade effect
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
     Future<void> _extractText() async {
     if (widget.imageFile == null) return;
@@ -49,6 +70,21 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
     }
   }
 
+  void _showFullScreenImage() {
+    setState(() {
+      _isFullScreenImage = true;
+    });
+    _animationController.forward();
+  }
+
+  void _hideFullScreenImage() {
+    _animationController.reverse().then((_) {
+      setState(() {
+        _isFullScreenImage = false;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,97 +94,125 @@ class _TypeOfExtractionState extends State<TypeOfExtraction> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
               (route) => false, // Predicate: Remove all previous routes
         );
-      },),
-      body: Column(
+      },
+      ),
+
+      body: Stack(
         children: [
-          Center(
-            child: SizedBox(
-              width: MediaQueryUtil.widthPercentage(context, 0.75),
-              child: Text(
-                "Choose Data Type for Extraction",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-            ),
-          ),
-          SizedBox(height: 10),
-          Container(
-            width: MediaQueryUtil.widthPercentage(context, 0.85),
-            height: MediaQueryUtil.heightPercentage(context, 0.35),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10), // Rounded corners for the border
-              color: AppColors.primaryColor,          // Background color for the container
-              border: Border.all(
-                color: Colors.black, // Border color
-                width: 1.0,          // Border width
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10), // Ensures rounded corners match the container
-              child: Image.file(widget.imageFile, fit: BoxFit.cover,),
-            ),
-          ),
-          SizedBox(height: 20),
-          Text(
-            "Select Extraction Type",
-            style: TextStyle(color: AppColors.textColor, fontSize: 14),
-          ),
-          _buildExtractionTile(
-            context,
-            titleText: "Text Extraction",
-            labelText: "It will extract all the text from your image",
-            radioButtonValue: "Text Extraction",
-            groupValue: _selectedOption!,
-            onChanged: (val) {
-              setState(() {
-                _selectedOption = val;
-              });
-            },
-            isSelected: _selectedOption == 'Text Extraction',
-          ),
-          _buildExtractionTile(
-            context,
-            titleText: "Table Extraction",
-            labelText: "It will extract tables from your image.",
-            radioButtonValue: "Table Extraction",
-            groupValue: _selectedOption!,
-            onChanged: (val) {
-              setState(() {
-                _selectedOption = val;
-              });
-            },
-            isSelected: _selectedOption == 'Table Extraction',
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Column(
             children: [
-              CustomButton(text: "Analyze", onPressed: () async{
-               await  _extractText();
-               if (_extractedText!.isNotEmpty || _extractedText != null) {
-                 print("Here is extracted text ${_extractedText}");
-                 Navigator.push(
-                   context,
-                   MaterialPageRoute(
-                     builder: (context) => ExtractionResult(
-                       initialValue: _extractedText,
-                     ),
-                   ),
-                 );
-               } else {
-                 // Show an error message if extraction failed
-                 ScaffoldMessenger.of(context).showSnackBar(
-                   SnackBar(content: Text('Failed to extract text. Please try again.')),
-                 );
-               }
-              }),
-              const SizedBox(width: 15,),
-              CustomButton(text: "Cancel", onPressed: (){
-                Navigator.pop(context);
-              }),
+              Center(
+                child: SizedBox(
+                  width: MediaQueryUtil.widthPercentage(context, 0.75),
+                  child: Text(
+                    "Choose Data Type for Extraction",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.displayLarge,
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              GestureDetector(
+                onTap: _showFullScreenImage,
+                child: Container(
+                  width: MediaQueryUtil.widthPercentage(context, 0.85),
+                  height: MediaQueryUtil.heightPercentage(context, 0.35),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10), // Rounded corners for the border
+                    color: AppColors.primaryColor,          // Background color for the container
+                    border: Border.all(
+                      color: Colors.black, // Border color
+                      width: 1.0,          // Border width
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10), // Ensures rounded corners match the container
+                    child: Image.file(widget.imageFile, fit: BoxFit.cover,),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                "Select Extraction Type",
+                style: TextStyle(color: AppColors.textColor, fontSize: 14),
+              ),
+              _buildExtractionTile(
+                context,
+                titleText: "Text Extraction",
+                labelText: "It will extract all the text from your image",
+                radioButtonValue: "Text Extraction",
+                groupValue: _selectedOption!,
+                onChanged: (val) {
+                  setState(() {
+                    _selectedOption = val;
+                  });
+                },
+                isSelected: _selectedOption == 'Text Extraction',
+              ),
+              _buildExtractionTile(
+                context,
+                titleText: "Table Extraction",
+                labelText: "It will extract tables from your image.",
+                radioButtonValue: "Table Extraction",
+                groupValue: _selectedOption!,
+                onChanged: (val) {
+                  setState(() {
+                    _selectedOption = val;
+                  });
+                },
+                isSelected: _selectedOption == 'Table Extraction',
+              ),
+              const Spacer(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CustomButton(text: "Analyze", onPressed: () async{
+                    await  _extractText();
+                    if (_extractedText!.isNotEmpty || _extractedText != null) {
+                      print("Here is extracted text ${_extractedText}");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ExtractionResult(
+                            initialValue: _extractedText,
+                          ),
+                        ),
+                      );
+                    } else {
+                      // Show an error message if extraction failed
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to extract text. Please try again.')),
+                      );
+                    }
+                  }),
+                  const SizedBox(width: 15,),
+                  CustomButton(text: "Cancel", onPressed: (){
+                    Navigator.pop(context);
+                  }),
+                ],
+              ),
+              const SizedBox(height: 30,)
             ],
           ),
-          const SizedBox(height: 30,)
+          if(_isFullScreenImage)
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: GestureDetector(
+                onTap: _hideFullScreenImage,
+                child: Container(
+                  color: Colors.black.withOpacity(0.9),
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.file(
+                        widget.imageFile,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -224,4 +288,10 @@ Widget _buildExtractionTile(
     ),
   );
 }
+
+
+
+
+
+
 

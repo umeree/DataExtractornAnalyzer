@@ -28,16 +28,16 @@ class _HomeScreenState extends State<HomeScreen> {
   File? _imageFile;
   int? _imageWidth;
   int? _imageHeight;
-  final List<String> imageUrls = [
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150/0000FF',
-    'https://via.placeholder.com/150/FF0000',
-    'https://via.placeholder.com/150/00FF00',
-    'https://via.placeholder.com/150/FFFF00',
-    'https://via.placeholder.com/150/FF00FF',
-    'https://via.placeholder.com/150/00FFFF',
-    'https://via.placeholder.com/150/CCCCCC',
-  ];
+  // final List<String> imageUrls = [
+  //   'https://via.placeholder.com/150',
+  //   'https://via.placeholder.com/150/0000FF',
+  //   'https://via.placeholder.com/150/FF0000',
+  //   'https://via.placeholder.com/150/00FF00',
+  //   'https://via.placeholder.com/150/FFFF00',
+  //   'https://via.placeholder.com/150/FF00FF',
+  //   'https://via.placeholder.com/150/00FFFF',
+  //   'https://via.placeholder.com/150/CCCCCC',
+  // ];
 
   List<String> _imagesPaths = [];
 
@@ -186,24 +186,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       )
                     : GridView.builder(
-                        // physics: const NeverScrollableScrollPhysics(), // Disable scrolling
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: spacing,
-                          mainAxisSpacing: spacing,
-                          childAspectRatio: 1.5,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    childAspectRatio: 1.5,
+                  ),
+                  itemCount: _imagesPaths.length,
+                  itemBuilder: (context, index) {
+                    return InkWell(
+                      onTap: () {
+                        // Handle tap on the item
+                        print("Tapped on item $index");
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => TypeOfExtraction(
+                                  imageFile: File(_imagesPaths[index]),
+                                )));
+
+                      },
+                      borderRadius: BorderRadius.circular(8), // Matches ClipRRect radius for ripple effect
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(_imagesPaths[index]),
+                          fit: BoxFit.cover,
                         ),
-                        itemCount: _imagesPaths.length,
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(_imagesPaths[index]),
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        },
                       ),
+                    );
+                  },
+                )
+                ,
               ),
             ),
             // Spacer(),
