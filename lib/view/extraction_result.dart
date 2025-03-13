@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:another_flushbar/flushbar.dart';
+import 'package:dataextractor_analyzer/utils/Utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_fonts/google_fonts.dart';
@@ -26,7 +28,7 @@ class ExtractionResult extends StatefulWidget {
 
 class _ExtractionResultState extends State<ExtractionResult> {
   TextEditingController _textController = TextEditingController();
-  double _fontSize = 16.0;
+  double _fontSize = 12.0;
   bool _isBold = false;
   bool _isItalic = false;
 
@@ -40,10 +42,13 @@ class _ExtractionResultState extends State<ExtractionResult> {
     final fontData = await rootBundle.load("assets/fonts/Roboto-Regular.ttf");
     return pw.Font.ttf(fontData);
   }
+  Future<pw.Font> loadRobotoBoldFont() async {
+    final fontData = await rootBundle.load("assets/fonts/Roboto-Bold.ttf");
+    return pw.Font.ttf(fontData);
+  }
 
   Future<void> _generateAndSavePDF(String longText) async {
     try {
-      // Request storage permission
       var status = await Permission.storage.request();
       if (status.isDenied) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,6 +59,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
       final pdf = pw.Document();
       final robotoFont = await loadRobotoFont();
+      final robotoFontBold = await loadRobotoFont();
 
       pdf.addPage(
         pw.MultiPage(
@@ -63,46 +69,46 @@ class _ExtractionResultState extends State<ExtractionResult> {
             return [
               pw.Text(
                 "Generated PDF",
-                style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, font: robotoFont,),
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                  font: robotoFont,
+                ),
               ),
               pw.SizedBox(height: 10),
-              pw.Text(
-                longText,
-                style: pw.TextStyle(font: robotoFont, fontSize: _fontSize),
-                textAlign: pw.TextAlign.justify,
-              ),
+              pw.Paragraph(
+            text: longText,
+            style: pw.TextStyle(
+            font: _isBold ? robotoFontBold : robotoFont,
+            fontSize: _fontSize,
+            ),
+            )
             ];
           },
         ),
       );
-
-      // Save PDF in Downloads folder
       Directory? directory;
       if (Platform.isAndroid) {
-        directory = Directory('/storage/emulated/0/Download'); // Downloads folder
+        directory = Directory('/storage/emulated/0/Download');
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
-
       String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final pdfPath = "${directory.path}/multi_page_pdf_$timestamp.pdf";
       final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
-      // if (kDebugMode) {
-      //   print("PDF saved successfully in Downloads: $pdfPath");
-      // }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("PDF saved successfully in Downloads: $pdfPath")),
-      );
+      Utils().showSuccessFlushbar(context, pdfPath);
+
     } catch (e) {
-      print(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error generating PDF: $e")),
-      );
+      debugPrint(e.toString());
+      Flushbar(
+        message: "Error generating PDF: $e",
+        icon: const Icon(Icons.error, color: Colors.red),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Colors.red.shade700,
+      ).show(context);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +119,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
-                (route) => false,
+            (route) => false,
           );
         },
       ),
@@ -131,43 +137,55 @@ class _ExtractionResultState extends State<ExtractionResult> {
                 ),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Font Size Selector
-                  DropdownButton<double>(
-                    value: _fontSize,
-                    items: [12.0, 14.0, 16.0, 18.0, 20.0, 24.0].map((size) {
-                      return DropdownMenuItem(
-                        value: size,
-                        child: Text(size.toString(), style: TextStyle(fontSize: size)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _fontSize = value!;
-                      });
-                    },
+                  // Font Size Selector with Label
+                  Row(
+                    children: [
+                      Icon(Icons.text_fields, color: Colors.black54),
+                      const SizedBox(width: 8),
+                      DropdownButton<double>(
+                        value: _fontSize,
+                        dropdownColor: Colors.white,
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(10),
+                        underline: Container(),
+                        items: [12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0]
+                            .map((size) {
+                          return DropdownMenuItem(
+                            value: size,
+                            child: Text(
+                              size.toString(),
+                              style: TextStyle(
+                                  fontSize: size, fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _fontSize = value!;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
 
-                  // Bold Button
-                  IconButton(
-                    icon: Icon(Icons.format_bold, color: _isBold ? Colors.blue : Colors.black),
-                    onPressed: () {
-                      setState(() {
-                        _isBold = !_isBold;
-                      });
-                    },
-                  ),
-
-                  // Italic Button
-                  IconButton(
-                    icon: Icon(Icons.format_italic, color: _isItalic ? Colors.blue : Colors.black),
-                    onPressed: () {
-                      setState(() {
-                        _isItalic = !_isItalic;
-                      });
-                    },
+                  // Font Style Buttons with Elevated Look
+                  Row(
+                    children: [
+                      _buildStyledIconButton(Icons.format_bold, _isBold, () {
+                        setState(() {
+                          _isBold = !_isBold;
+                        });
+                      }),
+                      const SizedBox(width: 10),
+                      _buildStyledIconButton(Icons.format_italic, _isItalic,
+                          () {
+                        setState(() {
+                          _isItalic = !_isItalic;
+                        });
+                      }),
+                    ],
                   ),
                 ],
               ),
@@ -184,7 +202,8 @@ class _ExtractionResultState extends State<ExtractionResult> {
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+                    borderSide:
+                        const BorderSide(color: Colors.grey, width: 1.0),
                   ),
                   contentPadding: const EdgeInsets.all(12),
                 ),
@@ -215,19 +234,22 @@ class _ExtractionResultState extends State<ExtractionResult> {
                       onPressed: () {
                         showModalBottomSheet(
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(10)),
                           ),
                           context: context,
                           builder: (context) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                              height: MediaQueryUtil.screenHeight(context) * 0.35,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 20),
+                              height:
+                                  MediaQueryUtil.screenHeight(context) * 0.35,
                               child: Center(
                                 child: DocumentTile(
                                   icon: Icons.picture_as_pdf,
                                   color: AppColors.redColor,
                                   text: "PDF Document",
-                                  onPress: (){
+                                  onPress: () {
                                     _generateAndSavePDF(_textController.text);
                                   },
                                 ),
@@ -260,4 +282,29 @@ class _ExtractionResultState extends State<ExtractionResult> {
       }),
     );
   }
+}
+
+Widget _buildStyledIconButton(
+    IconData icon, bool isActive, VoidCallback onTap) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.blue.shade100 : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border:
+            Border.all(color: isActive ? Colors.blue : Colors.grey.shade300),
+        boxShadow: [
+          if (isActive)
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.2),
+              blurRadius: 4,
+              spreadRadius: 1,
+            ),
+        ],
+      ),
+      child: Icon(icon, color: isActive ? Colors.blue : Colors.black),
+    ),
+  );
 }
