@@ -12,6 +12,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _imagesPaths = [];
 
   Future<void> pickImage(ImageSource source) async {
+    var status = await Permission.mediaLibrary.status;
+    debugPrint("Status of medialiabrary permission is $status");
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
