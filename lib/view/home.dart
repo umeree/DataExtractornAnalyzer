@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,57 +23,58 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // final int itemCount = 10; // Total number of grid items
-  final int crossAxisCount = 2; // Number of items per row
-  final double itemHeight = 120; // Fixed height of each grid item
-  final double spacing = 4; // Spacing between grid items
+  final int crossAxisCount = 2;
+  final double itemHeight = 120;
+  final double spacing = 4;
   File? _imageFile;
   int? _imageWidth;
   int? _imageHeight;
-  // final List<String> imageUrls = [
-  //   'https://via.placeholder.com/150',
-  //   'https://via.placeholder.com/150/0000FF',
-  //   'https://via.placeholder.com/150/FF0000',
-  //   'https://via.placeholder.com/150/00FF00',
-  //   'https://via.placeholder.com/150/FFFF00',
-  //   'https://via.placeholder.com/150/FF00FF',
-  //   'https://via.placeholder.com/150/00FFFF',
-  //   'https://via.placeholder.com/150/CCCCCC',
-  // ];
 
   List<String> _imagesPaths = [];
 
+
   Future<void> pickImage(ImageSource source) async {
     var status = await Permission.mediaLibrary.status;
-    debugPrint("Status of medialiabrary permission is $status");
+    debugPrint("Status of media library permission is $status");
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
           source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 26);
 
       if (pickedFile != null) {
+        final CroppedFile? croppedFile = await cropImage(pickedFile.path);
+        if (croppedFile == null) {
+          debugPrint("Cropping was cancelled or failed.");
+          return;
+        }
+
+        final File finalImage = File(croppedFile.path);
         final Directory appDir = await getApplicationDocumentsDirectory();
         final String fileName = pickedFile.name;
         final File localImage =
-            await File(pickedFile.path).copy('${appDir.path}/$fileName');
-        await DatabaseHelper.instance.insertImage(localImage.path);
-        final file = File(pickedFile.path);
-        final bytes = await file.readAsBytes();
-        final image = img.decodeImage(Uint8List.fromList(bytes));
+        await finalImage.copy('${appDir.path}/$fileName');
 
+        await DatabaseHelper.instance.insertImage(localImage.path);
         final images = await DatabaseHelper.instance.getImages();
 
         setState(() {
-          _imageFile = file;
-          _imageWidth = image?.width;
-          _imageHeight = image?.height;
+          _imageFile = finalImage;
           _imagesPaths = images;
         });
+
+        // Navigate to TypeOfExtraction after cropping
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TypeOfExtraction(imageFile: _imageFile!),
+          ),
+        );
       }
     } catch (e) {
       debugPrint(e.toString());
     }
   }
+
 
   Future<void> _loadImages() async {
     final images = await DatabaseHelper.instance.getImages();
@@ -90,6 +92,26 @@ class _HomeScreenState extends State<HomeScreen> {
       _imageFile == null;
     });
   }
+
+
+ Future<CroppedFile?> cropImage(String sourcePath) async {
+   CroppedFile? croppedFile = await ImageCropper().cropImage(
+     sourcePath: sourcePath,
+     uiSettings: [
+       AndroidUiSettings(
+         toolbarTitle: 'Cropper',
+         toolbarColor: Colors.deepOrange,
+         toolbarWidgetColor: Colors.white,
+         aspectRatioPresets: [
+           CropAspectRatioPreset.original,
+           CropAspectRatioPreset.square,
+           CropAspectRatioPresetCustom(),
+         ],
+       ),
+     ]
+   );
+   return croppedFile;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -250,4 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+}
+class CropAspectRatioPresetCustom implements CropAspectRatioPresetData {
+  @override
+  (int, int)? get data => (2, 3);
+
+  @override
+  String get name => '2x3 (customized)';
 }
