@@ -94,24 +94,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
- Future<CroppedFile?> cropImage(String sourcePath) async {
-   CroppedFile? croppedFile = await ImageCropper().cropImage(
-     sourcePath: sourcePath,
-     uiSettings: [
-       AndroidUiSettings(
-         toolbarTitle: 'Cropper',
-         toolbarColor: Colors.deepOrange,
-         toolbarWidgetColor: Colors.white,
-         aspectRatioPresets: [
-           CropAspectRatioPreset.original,
-           CropAspectRatioPreset.square,
-           CropAspectRatioPresetCustom(),
-         ],
-       ),
-     ]
-   );
-   return croppedFile;
-}
+  Future<CroppedFile?> cropImage(String sourcePath) async {
+    try {
+      CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: sourcePath,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Edit Image',
+            toolbarColor: AppColors.primaryColor, // Customize toolbar color
+            toolbarWidgetColor: Colors.white, // Customize text/icon color
+            backgroundColor: Colors.black, // Set background color
+            activeControlsWidgetColor: AppColors.primaryColor, // Button highlight color
+            statusBarColor: AppColors.primaryColor, // Status bar color
+            cropFrameColor: Colors.white, // Frame color around cropped area
+            cropGridColor: Colors.white, // Grid color inside the cropping frame
+            showCropGrid: true, // Show cropping grid lines
+            lockAspectRatio: false, // Allow free aspect ratio selection
+          ),
+          IOSUiSettings(
+            title: 'Edit Image',
+            rotateButtonsHidden: false, // Show rotation buttons
+            rotateClockwiseButtonHidden: false, // Show clockwise rotation
+            aspectRatioLockEnabled: false, // Allow free aspect ratio selection
+            aspectRatioPickerButtonHidden: false, // Show aspect ratio picker
+            resetButtonHidden: false, // Show reset button
+            doneButtonTitle: 'Apply', // Custom done button text
+            cancelButtonTitle: 'Cancel', // Custom cancel button text
+          ),
+        ],
+      );
+
+      return croppedFile;
+    } catch (e) {
+      debugPrint("Error cropping image: $e");
+      return null;
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
