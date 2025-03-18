@@ -27,7 +27,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         action ?  IconButton(
           icon: const Icon(Icons.menu_outlined,  size: 30, color: AppColors.primaryColor,), // Home icon
-          onPressed: onHomePressed,
+          onPressed: onSettingsPressed,
         ):const SizedBox(),
       ],
     );

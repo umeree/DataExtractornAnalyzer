@@ -5,6 +5,7 @@ import 'package:dataextractor_analyzer/db_helper/database_helper.dart';
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/utils/components/custom_app_bar.dart';
 import 'package:dataextractor_analyzer/utils/components/home_buttons.dart';
+import 'package:dataextractor_analyzer/view/settings.dart';
 import 'package:dataextractor_analyzer/view/type_of_extraction.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -92,8 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _imageFile == null;
     });
   }
-
-
   Future<CroppedFile?> cropImage(String sourcePath) async {
     try {
       CroppedFile? croppedFile = await ImageCropper().cropImage(
@@ -123,14 +122,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       );
-
       return croppedFile;
     } catch (e) {
       debugPrint("Error cropping image: $e");
       return null;
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -142,8 +139,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         action: true,
+          onSettingsPressed: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, animation, secondaryAnimation) => Settings(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0); // Starts from the right
+                  const end = Offset.zero; // Ends at normal position
+                  const curve = Curves.easeInOut;
+
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          },
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -222,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 child: _imagesPaths.length == 0 || _imagesPaths.isEmpty
-                    ? Center(
+                    ?const Center(
                         child: Text(
                           "No Recent Files",
                           style: TextStyle(
@@ -238,23 +256,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   itemCount: _imagesPaths.length,
                   itemBuilder: (context, index) {
+                    // Reverse the index to show the last image first
+                    int reverseIndex = _imagesPaths.length - 1 - index;
+
                     return InkWell(
                       onTap: () {
-                        // Handle tap on the item
-                        print("Tapped on item $index");
+                        debugPrint("Tapped on item $reverseIndex");
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TypeOfExtraction(
-                                  imageFile: File(_imagesPaths[index]),
-                                )));
-
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TypeOfExtraction(
+                              imageFile: File(_imagesPaths[reverseIndex]),
+                            ),
+                          ),
+                        );
                       },
-                      borderRadius: BorderRadius.circular(8), // Matches ClipRRect radius for ripple effect
+                      borderRadius: BorderRadius.circular(8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.file(
-                          File(_imagesPaths[index]),
+                          File(_imagesPaths[reverseIndex]),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -265,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             // Spacer(),
-            SizedBox(
+            const SizedBox(
               height: 20,
             )
           ],
