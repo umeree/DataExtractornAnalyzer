@@ -18,6 +18,8 @@ import 'package:dataextractor_analyzer/view/home.dart';
 import 'package:provider/provider.dart';
 import 'package:dataextractor_analyzer/view-model/edit-text-view-model.dart';
 
+import '../db_helper/database_helper.dart';
+
 class ExtractionResult extends StatefulWidget {
   final String initialValue;
   ExtractionResult({super.key, required this.initialValue});
@@ -97,6 +99,8 @@ class _ExtractionResultState extends State<ExtractionResult> {
       final pdfPath = "${directory.path}/multi_page_pdf_$timestamp.pdf";
       final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
+      await DatabaseHelper.instance.insertPDF(pdfPath);
+      await DatabaseHelper.instance.getPDFs();
       Utils().showSuccessFlushbar(context, pdfPath);
 
     } catch (e) {
@@ -234,29 +238,31 @@ class _ExtractionResultState extends State<ExtractionResult> {
                       onPressed: () {
                         showModalBottomSheet(
                           shape: const RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(10)),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
                           ),
                           context: context,
-                          builder: (context) {
+                          builder: (BuildContext modalContext) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 20),
-                              height:
-                                  MediaQueryUtil.screenHeight(context) * 0.35,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                              height: MediaQuery.of(context).size.height * 0.35,
                               child: Center(
                                 child: DocumentTile(
                                   icon: Icons.picture_as_pdf,
                                   color: AppColors.redColor,
                                   text: "PDF Document",
                                   onPress: () {
-                                    _generateAndSavePDF(_textController.text);
+                                    if (_textController.text.isNotEmpty) {
+                                      _generateAndSavePDF(_textController.text);
+                                    } else {
+                                      debugPrint("Text is empty!");
+                                    }
                                   },
                                 ),
                               ),
                             );
                           },
                         );
+
                       }),
                 ],
               ),
@@ -272,7 +278,35 @@ class _ExtractionResultState extends State<ExtractionResult> {
                         Navigator.pop(context);
                       }),
                   const SizedBox(width: 15),
-                  CustomButton(text: "Save", onPressed: () {}),
+                  CustomButton(text: "Save", onPressed: () {
+                    showModalBottomSheet(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                      ),
+                      context: context,
+                      builder: (BuildContext modalContext) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          height: MediaQuery.of(context).size.height * 0.35,
+                          child: Center(
+                            child: DocumentTile(
+                              icon: Icons.picture_as_pdf,
+                              color: AppColors.redColor,
+                              text: "PDF Document",
+                              onPress: () {
+                                if (_textController.text.isNotEmpty) {
+                                  _generateAndSavePDF(_textController.text);
+                                } else {
+                                  debugPrint("Text is empty!");
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    );
+
+                  }),
                 ],
               ),
               const SizedBox(height: 30),

@@ -19,11 +19,7 @@ class _SettingsState extends State<Settings> {
       backgroundColor: AppColors.backgroundColor,
       appBar: CustomAppBar(
         onLeadingPressed: () {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-            (route) => false,
-          );
+          Navigator.pop(context);
         },
       ),
       body: Column(

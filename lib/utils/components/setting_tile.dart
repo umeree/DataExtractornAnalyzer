@@ -1,4 +1,5 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
+import 'package:dataextractor_analyzer/view/data_storage.dart';
 import 'package:flutter/material.dart';
 
 class SettingTile extends StatelessWidget {
@@ -13,6 +14,31 @@ class SettingTile extends StatelessWidget {
     return InkWell(
       onTap: () {
         debugPrint("$settingText clicked");
+
+        switch (settingText) {
+          case "Data Storage": {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, animation, secondaryAnimation) => DataStorage(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0); // Starts from the right
+                  const end = Offset.zero; // Ends at normal position
+                  const curve = Curves.easeInOut;
+
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          }
+        }
+
       },
       child: Padding(
         padding:  EdgeInsets.symmetric(horizontal: size.width * .05),
