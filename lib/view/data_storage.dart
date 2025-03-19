@@ -40,7 +40,7 @@ class _DataStorageState extends State<DataStorage> {
       body: ListView.builder(
         itemCount: allPdfs.length,
         itemBuilder: (context, index) {
-          return DataStorageTile(filePath: allPdfs[index]);
+          return DataStorageTile(filePath: allPdfs[index], id: index,);
         },
       ),
     );

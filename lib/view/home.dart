@@ -131,37 +131,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate dynamic height to fit the screen
+    // Calculate dynamic height based on images count
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double appBarHeight = kToolbarHeight;
-    final double paddingHeight = 20 + 20 + 10 + 30; // Total padding and spacing
-    final double containerHeight = screenHeight - appBarHeight - paddingHeight;
+    final double minContainerHeight = 100; // Minimum height when no images
+    final double maxContainerHeight = screenHeight * 0.5; // Max height for images
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: CustomAppBar(
         action: true,
-          onSettingsPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) => Settings(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0); // Starts from the right
-                  const end = Offset.zero; // Ends at normal position
-                  const curve = Curves.easeInOut;
-
-                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          },
+        onSettingsPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => Settings()),
+          );
+        },
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -179,17 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    pickImage(ImageSource.camera).then((val) {
-                      if (_imageFile == null) return;
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => TypeOfExtraction(
-                                    imageFile: _imageFile!,
-                                  )));
-                    });
-                  },
+                  onTap: () => pickImage(ImageSource.camera),
                   child: _buildHomeButton(
                     context,
                     icon: Icons.camera_enhance_rounded,
@@ -197,17 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    pickImage(ImageSource.gallery).then((val) {
-                      if (_imageFile == null) return;
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => TypeOfExtraction(
-                                    imageFile: _imageFile!,
-                                  )));
-                    });
-                  },
+                  onTap: () => pickImage(ImageSource.gallery),
                   child: _buildHomeButton(
                     context,
                     icon: Icons.cloud_upload_rounded,
@@ -217,78 +181,64 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                const SizedBox(width: 5),
-                Text(
-                  "Recent Files",
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ],
+            Text(
+              "Recent Files",
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 5),
-            // Container to display the grid
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                width: MediaQuery.of(context).size.width,
-                height: containerHeight,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    width: 1,
-                  ),
-                ),
-                child: _imagesPaths.length == 0 || _imagesPaths.isEmpty
-                    ?const Center(
-                        child: Text(
-                          "No Recent Files",
-                          style: TextStyle(
-                              fontSize: 16, color: AppColors.greyColor),
-                        ),
-                      )
-                    : GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    childAspectRatio: 1.5,
-                  ),
-                  itemCount: _imagesPaths.length,
-                  itemBuilder: (context, index) {
-                    // Reverse the index to show the last image first
-                    int reverseIndex = _imagesPaths.length - 1 - index;
 
-                    return InkWell(
-                      onTap: () {
-                        debugPrint("Tapped on item $reverseIndex");
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TypeOfExtraction(
-                              imageFile: File(_imagesPaths[reverseIndex]),
-                            ),
+            // Dynamically adjust height based on images count
+            Container(
+              padding: const EdgeInsets.all(8),
+              width: MediaQuery.of(context).size.width,
+              height: _imagesPaths.isEmpty ? minContainerHeight : maxContainerHeight,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(width: 1),
+              ),
+              child: _imagesPaths.isEmpty
+                  ? const Center(
+                child: Text(
+                  "No Recent Files",
+                  style: TextStyle(fontSize: 16, color: AppColors.greyColor),
+                ),
+              )
+                  : GridView.builder(
+                shrinkWrap: true,
+                physics: const AlwaysScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: _imagesPaths.length,
+                itemBuilder: (context, index) {
+                  int reverseIndex = _imagesPaths.length - 1 - index;
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TypeOfExtraction(
+                            imageFile: File(_imagesPaths[reverseIndex]),
                           ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_imagesPaths[reverseIndex]),
-                          fit: BoxFit.cover,
                         ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(_imagesPaths[reverseIndex]),
+                        fit: BoxFit.cover,
                       ),
-                    );
-                  },
-                )
-                ,
+                    ),
+                  );
+                },
               ),
             ),
-            // Spacer(),
-            const SizedBox(
-              height: 20,
-            )
+            const SizedBox(height: 20),
           ],
         ),
       ),
