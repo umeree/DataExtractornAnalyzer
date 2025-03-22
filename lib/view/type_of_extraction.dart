@@ -24,18 +24,16 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
     bool _isFullScreenImage = false;
     late AnimationController _animationController;
     late Animation<double> _fadeAnimation;
-
+    bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-
     // Animation controller for fade effect
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -50,7 +48,9 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
 
     Future<void> _extractText() async {
     if (widget.imageFile == null) return;
-
+    setState(() {
+      isLoading = true;
+    });
     final inputImage = InputImage.fromFile(widget.imageFile);
     final textRecognizer = TextRecognizer();
 
@@ -59,14 +59,21 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
           await textRecognizer.processImage(inputImage);
       setState(() {
         _extractedText = recognizedText.text;
+        setState(() {
+          isLoading = false;
+        });
         // Navigator.push(context, MaterialPageRoute(builder: (context) => Home(extractedText: _extractedText)));
       });
     } catch (e) {
       setState(() {
         _extractedText = 'Error: $e';
+        isLoading = false;
       });
     } finally {
       textRecognizer.close();
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -84,7 +91,6 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
       });
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +102,6 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
         );
       },
       ),
-
       body: Stack(
         children: [
           Column(
@@ -211,6 +216,20 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
                     ),
                   ),
                 ),
+              ),
+            ),
+          if(isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5), // Semi-transparent background
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Center(
+                    child: CircularProgressIndicator(color: AppColors.primaryColor,),
+                  ),
+                  Text("Analyzign...", style: TextStyle(color: Colors.white),)
+                ],
               ),
             ),
         ],

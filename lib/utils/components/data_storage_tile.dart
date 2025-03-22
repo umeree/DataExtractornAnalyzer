@@ -29,7 +29,7 @@ class DataStorageTile extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Delete selected")),
             );
-              DatabaseHelper.instance.deletePDF(id);
+              await DatabaseHelper.instance.deletePDF(id);
               await DatabaseHelper.instance.getPDFs();
           }
         },

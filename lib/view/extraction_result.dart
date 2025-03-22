@@ -96,7 +96,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
         directory = await getApplicationDocumentsDirectory();
       }
       String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final pdfPath = "${directory.path}/multi_page_pdf_$timestamp.pdf";
+      final pdfPath = "${directory.path}/data_extracted_$timestamp.pdf";
       final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
       await DatabaseHelper.instance.insertPDF(pdfPath);
