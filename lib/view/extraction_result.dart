@@ -272,51 +272,53 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
               const Spacer(),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomButton(
-                      text: "Back",
-                      onPressed: () {
-                        Navigator.pop(context);
-                      }),
-                  const SizedBox(width: 15),
-                  CustomButton(text: "Save", onPressed: () {
-                    showModalBottomSheet(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                      ),
-                      context: context,
-                      builder: (BuildContext modalContext) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                          height: MediaQuery.of(context).size.height * 0.35,
-                          child: Center(
-                            child: DocumentTile(
-                              icon: Icons.picture_as_pdf,
-                              color: AppColors.redColor,
-                              text: "PDF Document",
-                              onPress: () {
-                                if (_textController.text.isNotEmpty) {
-                                  _generateAndSavePDF(_textController.text);
-                                } else {
-                                  debugPrint("Text is empty!");
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    );
-
-                  }),
-                ],
-              ),
-              const SizedBox(height: 30),
             ],
           ),
         );
       }),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CustomButton(
+                text: "Back",
+                onPressed: () {
+                  Navigator.pop(context);
+                }),
+            const SizedBox(width: 15),
+            CustomButton(text: "Save", onPressed: () {
+              showModalBottomSheet(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                ),
+                context: context,
+                builder: (BuildContext modalContext) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                    height: MediaQuery.of(context).size.height * 0.35,
+                    child: Center(
+                      child: DocumentTile(
+                        icon: Icons.picture_as_pdf,
+                        color: AppColors.redColor,
+                        text: "PDF Document",
+                        onPress: () {
+                          if (_textController.text.isNotEmpty) {
+                            _generateAndSavePDF(_textController.text);
+                          } else {
+                            debugPrint("Text is empty!");
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+
+            }),
+          ],
+        ),
+      ),
     );
   }
 }
