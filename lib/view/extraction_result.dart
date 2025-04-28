@@ -244,20 +244,23 @@ class _ExtractionResultState extends State<ExtractionResult> {
                           builder: (BuildContext modalContext) {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                              height: MediaQuery.of(context).size.height * 0.35,
-                              child: Center(
-                                child: DocumentTile(
-                                  icon: Icons.picture_as_pdf,
-                                  color: AppColors.redColor,
-                                  text: "PDF Document",
-                                  onPress: () {
-                                    if (_textController.text.isNotEmpty) {
-                                      _generateAndSavePDF(_textController.text);
-                                    } else {
-                                      debugPrint("Text is empty!");
-                                    }
-                                  },
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min, // Makes height depend on content
+                                children: [
+                                  DocumentTile(
+                                    icon: Icons.picture_as_pdf,
+                                    color: AppColors.redColor,
+                                    text: "PDF Document",
+                                    onPress: () {
+                                      Navigator.pop(modalContext);
+                                      if (_textController.text.isNotEmpty) {
+                                        _generateAndSavePDF(_textController.text);
+                                      } else {
+                                        debugPrint("Text is empty!");
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             );
                           },
