@@ -91,6 +91,36 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
       });
     });
   }
+
+  void showLoadingDialog(BuildContext context) {
+    showDialog(
+      barrierDismissible: false, // Prevents dismissing by tapping outside
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black.withOpacity(0.5),
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Wrap content
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: AppColors.primaryColor),
+                const SizedBox(height: 16),
+                const Text(
+                  "Analyzing...",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,19 +184,19 @@ class _TypeOfExtractionState extends State<TypeOfExtraction>  with SingleTickerP
                 },
                 isSelected: _selectedOption == 'Text Extraction',
               ),
-              _buildExtractionTile(
-                context,
-                titleText: "Table Extraction",
-                labelText: "It will extract tables from your image.",
-                radioButtonValue: "Table Extraction",
-                groupValue: _selectedOption!,
-                onChanged: (val) {
-                  setState(() {
-                    _selectedOption = val;
-                  });
-                },
-                isSelected: _selectedOption == 'Table Extraction',
-              ),
+              // _buildExtractionTile(
+              //   context,
+              //   titleText: "Table Extraction",
+              //   labelText: "It will extract tables from your image.",
+              //   radioButtonValue: "Table Extraction",
+              //   groupValue: _selectedOption!,
+              //   onChanged: (val) {
+              //     setState(() {
+              //       _selectedOption = val;
+              //     });
+              //   },
+              //   isSelected: _selectedOption == 'Table Extraction',
+              // ),
               const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
