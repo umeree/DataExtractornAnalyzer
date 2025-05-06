@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:dataextractor_analyzer/utils/providers/provider.dart';
 import 'package:dataextractor_analyzer/view/home.dart';
+import 'package:dataextractor_analyzer/view/spalash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
+      home: SplashScreen(),
     );
   }
 }

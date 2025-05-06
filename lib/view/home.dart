@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Center(
               child: Text(
-                "Data Extractor & Analyzer",
+                "Data Extractor",
                 style: Theme.of(context).textTheme.displayLarge,
               ),
             ),

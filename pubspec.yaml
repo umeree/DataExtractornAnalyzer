@@ -50,9 +50,11 @@ dependencies:
   open_filex: ^4.7.0
   image_cropper: ^9.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.6
 
 dev_dependencies:
   flutter_launcher_icons: "^0.14.3"
+  flutter_native_splash: ^2.4.6
   flutter_test:
     sdk: flutter
 
@@ -69,6 +71,7 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icons/data_extarct_icons.png"
   min_sdk_android: 21
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
