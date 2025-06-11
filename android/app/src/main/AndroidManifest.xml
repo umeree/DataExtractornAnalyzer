@@ -2,9 +2,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Permissions for Gallery/Storage (pre-Android 13) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- Use with caution on newer Android versions due to Scoped Storage -->
+
+    <!-- Permissions for Gallery/Storage (Android 13+ / API 33+) -->
+    <!-- Prefer these if targeting API 33+ and only need specific media types -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <!-- If your app requires full file access, use MANAGE_EXTERNAL_STORAGE (Google Play restrictions apply) -->
     <!-- <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" /> -->

@@ -82,8 +82,27 @@ class DatabaseHelper {
   }
 
   // Delete PDF
-  Future<int> deletePDF(int id) async {
+  Future<List<Map<String, dynamic>>> getAllPDFRecords() async {
     final db = await database;
-    return await db.delete('pdfs', where: 'id = ?', whereArgs: [id]);
+    return await db.query('pdfs', orderBy: 'id DESC');
+  }
+
+  Future<void> deletePDF(int id) async {
+    print("Deleting PDF with ID: $id");
+    final db = await database;
+
+    // First, get the record to see what we're deleting
+    final result = await db.query('pdfs', where: 'id = ?', whereArgs: [id]);
+    print("Record found: $result");
+
+    // Delete the record
+    final deleteResult = await db.delete('pdfs', where: 'id = ?', whereArgs: [id]);
+    print("Delete result: $deleteResult rows affected");
+
+    if (deleteResult > 0) {
+      print("PDF successfully deleted from database");
+    } else {
+      print("No record was deleted");
+    }
   }
 }

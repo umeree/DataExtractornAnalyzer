@@ -16,6 +16,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_cropper/image_cropper.dart';
 
+import '../utils/components/permission_dialog.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -34,8 +36,42 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _imagesPaths = [];
 
 
+  Future<void> requestCameraAndStoragePermissions() async {
+    // Request camera permission
+    var cameraStatus = await Permission.camera.status;
+    if (!cameraStatus.isGranted) {
+      cameraStatus = await Permission.camera.request();
+    }
+
+    // Request gallery/storage permissions (adjust based on Android version and needs)
+    // For older Android versions or broader access:
+    var storageStatus = await Permission.storage.status;
+    if (!storageStatus.isGranted) {
+      storageStatus = await Permission.storage.request();
+    }
+
+    // For Android 13+ granular media permissions:
+    var photoStatus = await Permission.photos.status;
+    if (!photoStatus.isGranted) {
+      photoStatus = await Permission.photos.request();
+    }
+
+
+
+    if (cameraStatus.isGranted &&
+        (storageStatus.isGranted ||
+            (photoStatus.isGranted ))) {
+      print("Permissions granted!");
+    } else {
+      print("Permissions denied.");
+      // Handle denied permissions (e.g., show a message, open app settings)
+      // openAppSettings(); // from permission_handler to open settings directly
+    }
+  }
+
   Future<void> pickImage(ImageSource source) async {
     var status = await Permission.mediaLibrary.status;
+    await Permission.mediaLibrary.request();
     debugPrint("Status of media library permission is $status");
     try {
       final picker = ImagePicker();
@@ -88,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    requestCameraAndStoragePermissions();
     _loadImages();
     setState(() {
       _imageFile == null;
@@ -163,7 +200,20 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 GestureDetector(
-                  onTap: () => pickImage(ImageSource.camera),
+                  onTap: () async {
+                    final status = await Permission.camera.status;
+                    if (status.isGranted) {
+                      pickImage(ImageSource.camera);
+                    } else {
+                      checkPermissionAndShowDialog(
+                        context: context,
+                        permission: Permission.camera,
+                        title: 'Camera Permission Denied',
+                        message: 'This feature requires camera access. Please enable it in settings.',
+                        positiveButtonText: 'Open Settings',
+                      );
+                    }
+                  },
                   child: _buildHomeButton(
                     context,
                     icon: Icons.camera_enhance_rounded,

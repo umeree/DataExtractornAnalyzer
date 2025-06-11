@@ -37,8 +37,9 @@ class _SettingsState extends State<Settings> {
             height: 20,
           ),
           SettingTile(settingText: "Data Storage",),
-          SettingTile(settingText: "Profile", top: false,),
-          SettingTile(settingText: "Help and Support", top: false,)
+          SettingTile(settingText: "Privacy Policy",top: false,),
+          // SettingTile(settingText: "Profile", top: false,),
+          // SettingTile(settingText: "Help and Support", top: false,)
         ],
       ),
     );

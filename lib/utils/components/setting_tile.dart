@@ -1,6 +1,7 @@
 import 'package:dataextractor_analyzer/res/app_colors.dart';
 import 'package:dataextractor_analyzer/view/data_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingTile extends StatelessWidget {
   final String settingText;
@@ -12,7 +13,7 @@ class SettingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     return InkWell(
-      onTap: () {
+      onTap: () async{
         debugPrint("$settingText clicked");
 
         switch (settingText) {
@@ -21,7 +22,7 @@ class SettingTile extends StatelessWidget {
               context,
               PageRouteBuilder(
                 transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) => DataStorage(),
+                pageBuilder: (context, animation, secondaryAnimation) => const DataStorage(),
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
                   const begin = Offset(1.0, 0.0); // Starts from the right
                   const end = Offset.zero; // Ends at normal position
@@ -36,6 +37,32 @@ class SettingTile extends StatelessWidget {
                 },
               ),
             );
+          }
+          case "Privacy Policy" : {
+
+              final Uri url = Uri.parse('https://dataextractor.vercel.app/');
+              if (!await launchUrl(url)) {
+                throw Exception('Could not launch $url');
+              }
+            // Navigator.push(
+            //   context,
+            //   PageRouteBuilder(
+            //     transitionDuration: const Duration(milliseconds: 300),
+            //     pageBuilder: (context, animation, secondaryAnimation) => const DataStorage(),
+            //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            //       const begin = Offset(1.0, 0.0); // Starts from the right
+            //       const end = Offset.zero; // Ends at normal position
+            //       const curve = Curves.easeInOut;
+            //
+            //       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            //
+            //       return SlideTransition(
+            //         position: animation.drive(tween),
+            //         child: child,
+            //       );
+            //     },
+            //   ),
+            // );
           }
         }
 
