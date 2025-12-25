@@ -28,18 +28,21 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.dataextractoranalyzer.dataextractor_analyzer"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 
     defaultConfig {
         applicationId = "com.dataextractoranalyzer.dataextractor_analyzer"
-        minSdk = 21
-        targetSdk = 35
+        minSdkVersion = flutter.minSdkVersion
+        targetSdk = 36
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
@@ -68,7 +71,7 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition-devanagari:16.0.1'
     implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
     implementation 'com.google.mlkit:text-recognition-korean:16.0.1'
-    implementation("com.google.android.material:material:1.13.0-alpha13")
+    implementation 'com.google.android.material:material:1.12.0'
 }
 
 flutter {

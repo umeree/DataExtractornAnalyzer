@@ -14,7 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_cropper/image_cropper.dart';
+import 'package:dataextractor_analyzer/view/image_cropper_screen.dart';
 
 import '../utils/components/permission_dialog.dart';
 
@@ -79,13 +79,13 @@ class _HomeScreenState extends State<HomeScreen> {
           source: source, maxWidth: 1200, maxHeight: 1200, imageQuality: 26);
 
       if (pickedFile != null) {
-        final CroppedFile? croppedFile = await cropImage(pickedFile.path);
+        final File? croppedFile = await cropImage(pickedFile.path);
         if (croppedFile == null) {
           debugPrint("Cropping was cancelled or failed.");
           return;
         }
 
-        final File finalImage = File(croppedFile.path);
+        final File finalImage = croppedFile;
         final Directory appDir = await getApplicationDocumentsDirectory();
         final String fileName = pickedFile.name;
         final File localImage =
@@ -130,34 +130,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _imageFile == null;
     });
   }
-  Future<CroppedFile?> cropImage(String sourcePath) async {
+  Future<File?> cropImage(String sourcePath) async {
     try {
-      CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: sourcePath,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Edit Image',
-            toolbarColor: AppColors.primaryColor, // Customize toolbar color
-            toolbarWidgetColor: Colors.white, // Customize text/icon color
-            backgroundColor: Colors.black, // Set background color
-            activeControlsWidgetColor: AppColors.primaryColor, // Button highlight color
-            statusBarColor: AppColors.primaryColor, // Status bar color
-            cropFrameColor: Colors.white, // Frame color around cropped area
-            cropGridColor: Colors.white, // Grid color inside the cropping frame
-            showCropGrid: true, // Show cropping grid lines
-            lockAspectRatio: false, // Allow free aspect ratio selection
+      final File? croppedFile = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageCropperScreen(
+            imageFile: File(sourcePath),
           ),
-          IOSUiSettings(
-            title: 'Edit Image',
-            rotateButtonsHidden: false, // Show rotation buttons
-            rotateClockwiseButtonHidden: false, // Show clockwise rotation
-            aspectRatioLockEnabled: false, // Allow free aspect ratio selection
-            aspectRatioPickerButtonHidden: false, // Show aspect ratio picker
-            resetButtonHidden: false, // Show reset button
-            doneButtonTitle: 'Apply', // Custom done button text
-            cancelButtonTitle: 'Cancel', // Custom cancel button text
-          ),
-        ],
+        ),
       );
       return croppedFile;
     } catch (e) {
@@ -236,8 +217,6 @@ class _HomeScreenState extends State<HomeScreen> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 5),
-
-            // Dynamically adjust height based on images count
             Container(
               padding: const EdgeInsets.all(8),
               width: MediaQuery.of(context).size.width,
@@ -312,11 +291,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-}
-class CropAspectRatioPresetCustom implements CropAspectRatioPresetData {
-  @override
-  (int, int)? get data => (2, 3);
-
-  @override
-  String get name => '2x3 (customized)';
 }

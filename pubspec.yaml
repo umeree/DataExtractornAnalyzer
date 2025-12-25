@@ -24,7 +24,6 @@ dependencies:
   intl: ^0.20.2
   another_flushbar: ^1.12.30
   open_filex: ^4.7.0
-  image_cropper: ^9.0.0
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.6
   url_launcher: ^6.3.1
