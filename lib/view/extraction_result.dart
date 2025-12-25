@@ -31,6 +31,7 @@ class ExtractionResult extends StatefulWidget {
 class _ExtractionResultState extends State<ExtractionResult> {
   TextEditingController _textController = TextEditingController();
   FocusNode _focusNode = FocusNode();
+  ScrollController _scrollController = ScrollController();
 
   // Text formatting properties
   double _fontSize = 16.0;
@@ -43,6 +44,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
   // Editor state
   int _currentLineCount = 1;
+  int _currentWordCount = 0;
   bool _showFormatting = true;
   String pdfName = 'data_extraction_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}';
 
@@ -72,23 +74,38 @@ class _ExtractionResultState extends State<ExtractionResult> {
   void initState() {
     super.initState();
     _textController.text = widget.initialValue;
-    _textController.addListener(_updateLineCount);
+    _textController.addListener(_updateTextStats);
+    _focusNode.addListener(_onFocusChange);
   }
 
   @override
   void dispose() {
-    _textController.removeListener(_updateLineCount);
+    _textController.removeListener(_updateTextStats);
+    _focusNode.removeListener(_onFocusChange);
     _textController.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _updateLineCount() {
+  void _onFocusChange() {
+    // Keep toolbar visible when editing
+    if (_focusNode.hasFocus && !_showFormatting) {
+      setState(() {
+        _showFormatting = true;
+      });
+    }
+  }
+
+  void _updateTextStats() {
     final text = _textController.text;
     final lineCount = '\n'.allMatches(text).length + 1;
-    if (_currentLineCount != lineCount) {
+    final wordCount = text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length;
+
+    if (_currentLineCount != lineCount || _currentWordCount != wordCount) {
       setState(() {
         _currentLineCount = lineCount;
+        _currentWordCount = wordCount;
       });
     }
   }
@@ -112,6 +129,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
           title: Text('Enter PDF Name'),
           content: TextField(
             controller: _controller,
+            autofocus: true,
             decoration: InputDecoration(
               hintText: 'e.g. MyDocument',
               border: OutlineInputBorder(),
@@ -129,6 +147,10 @@ class _ExtractionResultState extends State<ExtractionResult> {
                 String inputName = _controller.text.trim();
                 if (inputName.isNotEmpty) {
                   Navigator.of(context).pop(inputName);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a name')),
+                  );
                 }
               },
               child: Text('Save'),
@@ -151,12 +173,67 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
   Future<void> generatePDF(String longText) async {
     try {
-      var status = await Permission.storage.request();
-      if (status.isDenied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Storage permission denied")),
-        );
-        return;
+      // Improved permission handling for Android:
+      // - On Android 11+ writing to Download directly requires MANAGE_EXTERNAL_STORAGE
+      // - Fall back to legacy STORAGE permission for older Android versions
+      if (Platform.isAndroid) {
+        // First try requesting managed external storage (Android 11+)
+        PermissionStatus manageStatus = await Permission.manageExternalStorage.status;
+        if (!manageStatus.isGranted) {
+          manageStatus = await Permission.manageExternalStorage.request();
+        }
+
+        // Also request legacy storage permission as a fallback
+        PermissionStatus storageStatus = await Permission.storage.status;
+        if (!storageStatus.isGranted) {
+          storageStatus = await Permission.storage.request();
+        }
+
+        // If neither permission is granted, handle denial cases
+        if (!(manageStatus.isGranted || storageStatus.isGranted)) {
+          // If permanently denied, prompt to open app settings
+          if (manageStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied) {
+            // Show a dialog explaining the need for permission and offering to open settings
+            final openSettings = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Storage Permission Required'),
+                content: const Text(
+                  'To save PDF files to the Downloads folder the app needs storage access.\n\n'
+                  'Please grant storage permission in app settings.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Open Settings'),
+                  ),
+                ],
+              ),
+            );
+
+            if (openSettings == true) {
+              // This opens the OS app settings page for this app
+              openAppSettings();
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Storage permission is required to save PDF.')),
+            );
+            return;
+          }
+
+          // If just denied (not permanently), notify the user
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Storage permission denied')),
+          );
+          return;
+        }
+      } else {
+        // On non-Android platforms, storage permission is generally not needed
+        // (iOS handles file saving via app document dirs). Continue.
       }
 
       final pdf = pw.Document();
@@ -184,6 +261,25 @@ class _ExtractionResultState extends State<ExtractionResult> {
       Directory? directory;
       if (Platform.isAndroid) {
         directory = Directory('/storage/emulated/0/Download');
+        // If downloads dir is not writable (permission issues), fallback to app documents
+        try {
+          if (!(await directory.exists())) {
+            // Create directory reference doesn't exist; fallback
+            directory = await getApplicationDocumentsDirectory();
+          } else {
+            // Try writing a small temp file to check writability
+            final testFile = File('${directory.path}/.permission_test');
+            try {
+              await testFile.writeAsString('test');
+              await testFile.delete();
+            } catch (e) {
+              // Can't write to downloads - fallback
+              directory = await getApplicationDocumentsDirectory();
+            }
+          }
+        } catch (e) {
+          directory = await getApplicationDocumentsDirectory();
+        }
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
@@ -208,7 +304,14 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
   void _insertText(String text) {
     final currentPosition = _textController.selection.start;
-    if (currentPosition < 0) return;
+    if (currentPosition < 0) {
+      // If no cursor position, append to end
+      _textController.text = _textController.text + text;
+      _textController.selection = TextSelection.collapsed(
+        offset: _textController.text.length,
+      );
+      return;
+    }
 
     final currentText = _textController.text;
     final newText = currentText.substring(0, currentPosition) +
@@ -219,10 +322,21 @@ class _ExtractionResultState extends State<ExtractionResult> {
     _textController.selection = TextSelection.collapsed(
       offset: currentPosition + text.length,
     );
+
+    // Keep focus on text field
+    _focusNode.requestFocus();
   }
 
-  void _formatSelection() {
-    setState(() {});
+  void _clearAllFormatting() {
+    setState(() {
+      _fontSize = 16.0;
+      _isBold = false;
+      _isItalic = false;
+      _isUnderlined = false;
+      _textColor = Colors.black;
+      _textAlign = TextAlign.left;
+      _fontFamily = 'Roboto';
+    });
   }
 
   @override
@@ -243,99 +357,178 @@ class _ExtractionResultState extends State<ExtractionResult> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              child: Text(
-                "Rich Text Editor",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displayLarge,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Text Editor",
+                      style: Theme.of(context).textTheme.displayLarge,
+                    ),
+                  ),
+                  // Quick Stats Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.text_fields, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$_currentWordCount words',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Formatting Toolbar
+            // Formatting Toolbar - Compact and Always Visible When Editing
             if (_showFormatting) _buildFormattingToolbar(),
 
-            // Main Editor Area
+            // Main Editor Area with Better Scrolling
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _focusNode.hasFocus ? Colors.blue.shade300 : Colors.grey.shade300,
+                      width: _focusNode.hasFocus ? 2 : 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 5,
-                        spreadRadius: 1,
+                        color: _focusNode.hasFocus
+                            ? Colors.blue.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      // Ruler/Info Bar
+                      // Info Bar
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(10),
-                            topRight: Radius.circular(10),
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
                           ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Lines: $_currentLineCount | Words: ${_textController.text.split(' ').where((word) => word.isNotEmpty).length}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_note, size: 16, color: Colors.grey.shade600),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Lines: $_currentLineCount • Words: $_currentWordCount • Chars: ${_textController.text.length}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(
-                                _showFormatting ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _showFormatting = !_showFormatting;
-                                });
-                              },
-                              tooltip: _showFormatting ? 'Hide Formatting' : 'Show Formatting',
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!value.readOnly)
+                                  Tooltip(
+                                    message: 'Clear Formatting',
+                                    child: InkWell(
+                                      onTap: _clearAllFormatting,
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.format_clear,
+                                          size: 18,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _showFormatting = !_showFormatting;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(
+                                      _showFormatting ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                      size: 20,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
 
-                      // Text Editor
+                      // Text Editor with Proper Scrolling
                       Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          focusNode: _focusNode,
-                          maxLines: null,
-                          expands: true,
-                          readOnly: value.readOnly,
-                          textAlign: _textAlign,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.all(20),
-                            hintText: 'Start typing your document...',
+                        child: Scrollbar(
+                          controller: _scrollController,
+                          thumbVisibility: true,
+                          radius: const Radius.circular(4),
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(20),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: TextField(
+                              controller: _textController,
+                              focusNode: _focusNode,
+                              maxLines: null,
+                              readOnly: value.readOnly,
+                              textAlign: _textAlign,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Start typing your document...',
+                                hintStyle: TextStyle(color: Colors.grey),
+                              ),
+                              style: TextStyle(
+                                fontSize: _fontSize,
+                                fontWeight: _isBold ? FontWeight.bold : FontWeight.normal,
+                                fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
+                                decoration: _isUnderlined ? TextDecoration.underline : TextDecoration.none,
+                                color: _textColor,
+                                fontFamily: _fontFamily == 'Times New Roman' ? 'serif' :
+                                _fontFamily == 'Courier New' ? 'monospace' :
+                                GoogleFonts.roboto().fontFamily,
+                                height: 1.6,
+                              ),
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.newline,
+                            ),
                           ),
-                          style: TextStyle(
-                            fontSize: _fontSize,
-                            fontWeight: _isBold ? FontWeight.bold : FontWeight.normal,
-                            fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
-                            decoration: _isUnderlined ? TextDecoration.underline : TextDecoration.none,
-                            color: _textColor,
-                            fontFamily: _fontFamily == 'Times New Roman' ? 'serif' :
-                            _fontFamily == 'Courier New' ? 'monospace' :
-                            GoogleFonts.roboto().fontFamily,
-                            height: 1.5,
-                          ),
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
                         ),
                       ),
                     ],
@@ -346,18 +539,19 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
             // Action Buttons
             Padding(
-              padding: const EdgeInsets.all(30),
+              padding: const EdgeInsets.all(20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      CustomButton(
-                        text: value.readOnly ? "Edit" : "Done",
+                      _buildActionButton(
+                        icon: value.readOnly ? Icons.edit : Icons.check,
+                        label: value.readOnly ? "Edit" : "Done",
+                        color: value.readOnly ? Colors.blue : Colors.green,
                         onPressed: () {
                           value.setReadOnly(!value.readOnly);
                           if (!value.readOnly) {
-                            // Small delay to ensure state is updated
                             Future.delayed(Duration(milliseconds: 100), () {
                               if (mounted) {
                                 _focusNode.requestFocus();
@@ -369,21 +563,19 @@ class _ExtractionResultState extends State<ExtractionResult> {
                         },
                       ),
                       const SizedBox(width: 10),
-                      CustomButton(
-                        text: "Export",
+                      _buildActionButton(
+                        icon: Icons.file_download,
+                        label: "Export",
+                        color: Colors.orange,
                         onPressed: () => _showExportOptions(),
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      CustomButton(
-                        text: "Back",
-                        onPressed: () => Navigator.pop(context),
-                      ),
-
-
-                    ],
+                  _buildActionButton(
+                    icon: Icons.arrow_back,
+                    label: "Back",
+                    color: Colors.grey,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -394,44 +586,71 @@ class _ExtractionResultState extends State<ExtractionResult> {
     );
   }
 
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: 2,
+      ),
+    );
+  }
+
   Widget _buildFormattingToolbar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 5,
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 8,
             spreadRadius: 1,
           ),
         ],
       ),
       child: Column(
         children: [
-          // First Row - Font and Size
+          // First Row - Font Controls
           Row(
             children: [
-              // Font Family Dropdown
+              // Font Family
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
                     border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButton<String>(
                     value: _fontFamily,
                     isExpanded: true,
                     underline: const SizedBox(),
+                    icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade700),
                     items: _availableFonts.map((font) {
                       return DropdownMenuItem(
                         value: font,
-                        child: Text(font, style: const TextStyle(fontSize: 14)),
+                        child: Text(
+                          font,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -439,6 +658,7 @@ class _ExtractionResultState extends State<ExtractionResult> {
                         setState(() {
                           _fontFamily = value;
                         });
+                        _focusNode.requestFocus();
                       }
                     },
                   ),
@@ -448,145 +668,167 @@ class _ExtractionResultState extends State<ExtractionResult> {
 
               // Font Size
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
                   border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: DropdownButton<double>(
-                  value: _fontSize,
-                  underline: const SizedBox(),
-                  items: [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 32.0, 36.0]
-                      .map((size) {
-                    return DropdownMenuItem(
-                      value: size,
-                      child: Text(size.toInt().toString()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _fontSize = value;
-                      });
-                    }
-                  },
+                child: Row(
+                  children: [
+                    Icon(Icons.format_size, size: 16, color: Colors.grey.shade700),
+                    const SizedBox(width: 4),
+                    DropdownButton<double>(
+                      value: _fontSize,
+                      underline: const SizedBox(),
+                      items: [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 28.0, 32.0, 36.0]
+                          .map((size) {
+                        return DropdownMenuItem(
+                          value: size,
+                          child: Text(
+                            size.toInt().toString(),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _fontSize = value;
+                          });
+                          _focusNode.requestFocus();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
 
-          // Second Row - Formatting Options
+          // Second Row - Text Formatting
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                // Text Style Buttons
-                _buildStyledIconButton(Icons.format_bold, _isBold, () {
-                  setState(() {
-                    _isBold = !_isBold;
-                  });
-                }),
-                const SizedBox(width: 8),
-                _buildStyledIconButton(Icons.format_italic, _isItalic, () {
-                  setState(() {
-                    _isItalic = !_isItalic;
-                  });
-                }),
-                const SizedBox(width: 8),
-                _buildStyledIconButton(Icons.format_underlined, _isUnderlined, () {
-                  setState(() {
-                    _isUnderlined = !_isUnderlined;
-                  });
-                }),
-                const SizedBox(width: 15),
+                // Style Buttons
+                _buildFormatButton(
+                  icon: Icons.format_bold,
+                  isActive: _isBold,
+                  tooltip: 'Bold',
+                  onTap: () {
+                    setState(() => _isBold = !_isBold);
+                    _focusNode.requestFocus();
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_italic,
+                  isActive: _isItalic,
+                  tooltip: 'Italic',
+                  onTap: () {
+                    setState(() => _isItalic = !_isItalic);
+                    _focusNode.requestFocus();
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_underlined,
+                  isActive: _isUnderlined,
+                  tooltip: 'Underline',
+                  onTap: () {
+                    setState(() => _isUnderlined = !_isUnderlined);
+                    _focusNode.requestFocus();
+                  },
+                ),
+
+                const SizedBox(width: 12),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                const SizedBox(width: 12),
 
                 // Alignment Buttons
-                _buildStyledIconButton(Icons.format_align_left, _textAlign == TextAlign.left, () {
-                  setState(() {
-                    _textAlign = TextAlign.left;
-                  });
-                }),
-                const SizedBox(width: 8),
-                _buildStyledIconButton(Icons.format_align_center, _textAlign == TextAlign.center, () {
-                  setState(() {
-                    _textAlign = TextAlign.center;
-                  });
-                }),
-                const SizedBox(width: 8),
-                _buildStyledIconButton(Icons.format_align_right, _textAlign == TextAlign.right, () {
-                  setState(() {
-                    _textAlign = TextAlign.right;
-                  });
-                }),
-                const SizedBox(width: 8),
-                _buildStyledIconButton(Icons.format_align_justify, _textAlign == TextAlign.justify, () {
-                  setState(() {
-                    _textAlign = TextAlign.justify;
-                  });
-                }),
-                const SizedBox(width: 15),
+                _buildFormatButton(
+                  icon: Icons.format_align_left,
+                  isActive: _textAlign == TextAlign.left,
+                  tooltip: 'Align Left',
+                  onTap: () {
+                    setState(() => _textAlign = TextAlign.left);
+                    _focusNode.requestFocus();
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_align_center,
+                  isActive: _textAlign == TextAlign.center,
+                  tooltip: 'Align Center',
+                  onTap: () {
+                    setState(() => _textAlign = TextAlign.center);
+                    _focusNode.requestFocus();
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_align_right,
+                  isActive: _textAlign == TextAlign.right,
+                  tooltip: 'Align Right',
+                  onTap: () {
+                    setState(() => _textAlign = TextAlign.right);
+                    _focusNode.requestFocus();
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_align_justify,
+                  isActive: _textAlign == TextAlign.justify,
+                  tooltip: 'Justify',
+                  onTap: () {
+                    setState(() => _textAlign = TextAlign.justify);
+                    _focusNode.requestFocus();
+                  },
+                ),
+
+                const SizedBox(width: 12),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                const SizedBox(width: 12),
 
                 // Color Picker
-                GestureDetector(
-                  onTap: () => _showColorPicker(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.format_color_text, color: _textColor),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 20,
-                          height: 4,
-                          color: _textColor,
-                        ),
-                      ],
-                    ),
-                  ),
+                _buildColorButton(),
+
+                const SizedBox(width: 12),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                const SizedBox(width: 12),
+
+                // List & Insert Tools
+                _buildFormatButton(
+                  icon: Icons.format_list_bulleted,
+                  tooltip: 'Bullet Point',
+                  onTap: () => _insertText('• '),
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          // Third Row - Additional Tools
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildToolButton(Icons.format_list_bulleted, "Bullet List", () {
-                  _insertText("• ");
-                }),
-                const SizedBox(width: 8),
-                _buildToolButton(Icons.format_list_numbered, "Numbered List", () {
-                  _insertText("1. ");
-                }),
-                const SizedBox(width: 8),
-                _buildToolButton(Icons.format_indent_increase, "Indent", () {
-                  _insertText("    ");
-                }),
-                const SizedBox(width: 8),
-                _buildToolButton(Icons.format_quote, "Quote", () {
-                  _insertText('"');
-                }),
-                const SizedBox(width: 15),
-                _buildToolButton(Icons.undo, "Undo", () {
-                  // Implement undo functionality if needed
-                }),
-                const SizedBox(width: 8),
-                _buildToolButton(Icons.redo, "Redo", () {
-                  // Implement redo functionality if needed
-                }),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_list_numbered,
+                  tooltip: 'Numbered List',
+                  onTap: () {
+                    final lines = _textController.text.split('\n').length;
+                    _insertText('${lines}. ');
+                  },
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_indent_increase,
+                  tooltip: 'Indent',
+                  onTap: () => _insertText('    '),
+                ),
+                const SizedBox(width: 6),
+                _buildFormatButton(
+                  icon: Icons.format_quote,
+                  tooltip: 'Quote',
+                  onTap: () => _insertText('" "'),
+                ),
               ],
             ),
           ),
@@ -595,38 +837,12 @@ class _ExtractionResultState extends State<ExtractionResult> {
     );
   }
 
-  Widget _buildStyledIconButton(IconData icon, bool isActive, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.blue.shade100 : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isActive ? Colors.blue : Colors.grey.shade300),
-            boxShadow: [
-              if (isActive)
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-            ],
-          ),
-          child: Icon(
-            icon,
-            color: isActive ? Colors.blue : Colors.black54,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToolButton(IconData icon, String tooltip, VoidCallback onTap) {
+  Widget _buildFormatButton({
+    required IconData icon,
+    bool isActive = false,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -635,13 +851,53 @@ class _ExtractionResultState extends State<ExtractionResult> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isActive ? Colors.blue.shade500 : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(
+                color: isActive ? Colors.blue.shade700 : Colors.grey.shade300,
+                width: isActive ? 2 : 1,
+              ),
             ),
-            child: Icon(icon, color: Colors.black54, size: 20),
+            child: Icon(
+              icon,
+              color: isActive ? Colors.white : Colors.grey.shade700,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorButton() {
+    return Tooltip(
+      message: 'Text Color',
+      child: GestureDetector(
+        onTap: _showColorPicker,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.palette, color: _textColor, size: 20),
+              const SizedBox(width: 6),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: _textColor,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.grey.shade400),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -653,44 +909,73 @@ class _ExtractionResultState extends State<ExtractionResult> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Choose Text Color'),
+          title: Row(
+            children: [
+              Icon(Icons.palette, color: Colors.blue),
+              const SizedBox(width: 10),
+              Text('Choose Text Color'),
+            ],
+          ),
           content: SizedBox(
-            width: 200,
+            width: 250,
             child: GridView.builder(
               shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
               ),
               itemCount: _availableColors.length,
               itemBuilder: (context, index) {
                 final color = _availableColors[index];
+                final isSelected = _textColor == color;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       _textColor = color;
                     });
                     Navigator.pop(context);
+                    _focusNode.requestFocus();
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _textColor == color ? Colors.grey : Colors.transparent,
+                        color: isSelected ? Colors.white : Colors.transparent,
                         width: 3,
                       ),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: color.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                      ],
                     ),
+                    child: isSelected
+                        ? Icon(Icons.check, color: Colors.white, size: 24)
+                        : null,
                   ),
                 );
               },
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _focusNode.requestFocus();
+              },
+              child: Text('Close'),
+            ),
+          ],
         );
       },
     );
   }
+
 
   void _showExportOptions() {
     showModalBottomSheet(
@@ -754,3 +1039,4 @@ class _ExtractionResultState extends State<ExtractionResult> {
     );
   }
 }
+
